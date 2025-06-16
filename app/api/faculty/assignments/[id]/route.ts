@@ -4,7 +4,7 @@ import { cookies } from "next/headers"
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         // Get user from session
@@ -21,7 +21,8 @@ export async function DELETE(
             return NextResponse.json({ success: false, message: "Access denied. Faculty only." }, { status: 403 })
         }
 
-        const assignmentId = parseInt(params.id)
+        const resolvedParams = await params
+        const assignmentId = parseInt(resolvedParams.id)
 
         if (isNaN(assignmentId)) {
             return NextResponse.json(

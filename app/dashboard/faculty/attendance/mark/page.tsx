@@ -61,7 +61,7 @@ export default async function MarkAttendancePage({ searchParams }: PageProps) {
 
         // Get enrolled students for the course
         console.log('Fetching course students...')
-        const students = await getCourseStudents(parseInt(courseId), currentDate, parseInt(timetableId))
+        const students = await getCourseStudents(parseInt(courseId), currentDate, parseInt(timetableId)) as any[]
         console.log('Students loaded:', students.length)
 
         return (
