@@ -18,16 +18,10 @@ const nextConfig = {
 
   // Experimental optimizations
   experimental: {
-    optimizeCss: true,
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
 
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+
 }
 
 export default withBundleAnalyzer(nextConfig)
