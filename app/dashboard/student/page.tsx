@@ -89,7 +89,7 @@ export default function StudentDashboard() {
                     <div>
                         <h1 className="text-3xl font-bold text-foreground">Student Dashboard</h1>
                         <p className="text-muted-foreground">
-                            Welcome back, {user?.name}. Here's an overview of your academic progress.
+                            Welcome back, {user?.fullName}. Here's an overview of your academic progress.
                         </p>
                     </div>
                 </div>
