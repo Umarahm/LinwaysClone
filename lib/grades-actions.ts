@@ -1,10 +1,10 @@
 "use server"
 
 import { sql } from "./db"
-import { getCurrentUser } from "./auth-actions"
+import { getCurrentUserServer } from "./auth-server"
 
 export async function getStudentGrades() {
-  const user = await getCurrentUser()
+  const user = await getCurrentUserServer()
   if (!user || user.role !== "student") {
     throw new Error("Unauthorized")
   }

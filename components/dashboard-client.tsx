@@ -19,12 +19,17 @@ import { FacultyDashboard } from "@/components/faculty-dashboard"
 import { AdminDashboard } from "@/components/admin-dashboard"
 import { AssignmentsPage } from "@/components/student/assignments-page"
 import { AttendanceView } from "@/components/student/attendance-view"
+import { AttendanceAnalytics } from "@/components/attendance/attendance-analytics"
+import { getStudentAttendance } from "@/lib/attendance-actions"
 import { GradesOverview } from "@/components/student/grades-overview"
 import { AssignmentsManagement } from "@/components/faculty/assignments-management"
 import { AttendanceMarking } from "@/components/faculty/attendance-marking"
+import { FacultyTimetableClient } from "@/components/faculty/faculty-timetable-client"
+import { StudentTimetableClient } from "@/components/student/student-timetable-client"
 import { AnnouncementsPage } from "@/components/announcements-page"
 import { UserManagement } from "@/components/admin/user-management"
 import { CourseManagement } from "@/components/admin/course-management"
+import { TimetableSidebar } from "@/components/admin/timetable-sidebar"
 import { EnrollmentManagement } from "@/components/admin/enrollment-management"
 import { AssignmentManagement } from "@/components/faculty/assignment-management"
 import { GradingInterface } from "@/components/faculty/grading-interface"
@@ -75,6 +80,7 @@ const getNavigationItems = (role: string) => {
   if (role === "student") {
     return [
       ...baseItems.slice(0, 1),
+      { title: "My Timetable", icon: Calendar, key: "student-timetable" },
       { title: "My Assignments", icon: ClipboardList, key: "my-assignments" },
       { title: "My Grades", icon: TrendingUp, key: "my-grades" },
       { title: "Attendance", icon: Calendar, key: "attendance" },
@@ -86,9 +92,11 @@ const getNavigationItems = (role: string) => {
   if (role === "faculty") {
     return [
       ...baseItems.slice(0, 1),
+      { title: "My Timetable", icon: Calendar, key: "my-timetable" },
       { title: "Assignments", icon: ClipboardList, key: "assignment-management" },
       { title: "Grading", icon: GraduationCap, key: "grading" },
       { title: "Mark Attendance", icon: Calendar, key: "mark-attendance" },
+      { title: "Attendance Analytics", icon: TrendingUp, key: "attendance-analytics" },
       { title: "Courses", icon: BookOpen, key: "courses" },
       ...baseItems.slice(1),
     ]
@@ -99,7 +107,9 @@ const getNavigationItems = (role: string) => {
       ...baseItems.slice(0, 1),
       { title: "User Management", icon: Users, key: "user-management" },
       { title: "Course Management", icon: BookOpen, key: "course-management" },
+      { title: "Timetable Management", icon: Calendar, key: "timetable-management" },
       { title: "Enrollment Management", icon: ClipboardList, key: "enrollment-management" },
+      { title: "Attendance Analytics", icon: TrendingUp, key: "attendance-analytics" },
       { title: "Reports", icon: TrendingUp, key: "reports" },
       ...baseItems.slice(1),
     ]
@@ -110,7 +120,31 @@ const getNavigationItems = (role: string) => {
 
 export function DashboardClient({ user }: DashboardClientProps) {
   const [currentPage, setCurrentPage] = React.useState("dashboard")
+  const [attendanceData, setAttendanceData] = React.useState<any>(null)
+  const [loading, setLoading] = React.useState(false)
   const navigationItems = getNavigationItems(user.role)
+
+  // Fetch attendance data when needed
+  const fetchAttendanceData = React.useCallback(async () => {
+    if (user.role === "student") {
+      try {
+        setLoading(true)
+        const data = await getStudentAttendance()
+        setAttendanceData(data)
+      } catch (error) {
+        console.error('Error fetching attendance data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+  }, [user.role])
+
+  // Fetch attendance data when switching to attendance page
+  React.useEffect(() => {
+    if (currentPage === "attendance" && user.role === "student" && !attendanceData) {
+      fetchAttendanceData()
+    }
+  }, [currentPage, user.role, attendanceData, fetchAttendanceData])
 
   const handleLogout = async () => {
     await signOut()
@@ -211,7 +245,7 @@ export function DashboardClient({ user }: DashboardClientProps) {
           <div className="p-6 space-y-6">
             <DashboardSummaryCards userRole={user.role as 'student' | 'faculty' | 'admin'} />
             {user.role === "student" && <StudentDashboard />}
-            {user.role === "faculty" && <FacultyDashboard />}
+            {user.role === "faculty" && <FacultyDashboard user={user} />}
             {user.role === "admin" && <AdminDashboard />}
           </div>
         )
@@ -252,6 +286,28 @@ export function DashboardClient({ user }: DashboardClientProps) {
         }
 
       case "attendance":
+        if (loading) {
+          return (
+            <div className="flex justify-center items-center h-64">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-lg text-muted-foreground">Loading attendance data...</p>
+              </div>
+            </div>
+          )
+        }
+
+        if (attendanceData) {
+          return (
+            <AttendanceView
+              attendanceRecords={attendanceData.attendanceRecords}
+              attendanceSummary={attendanceData.attendanceSummary}
+              weeklyTrends={attendanceData.weeklyTrends}
+              monthlyStats={attendanceData.monthlyStats}
+            />
+          )
+        }
+
         return (
           <div className="p-6">
             <AttendanceHistory />
@@ -275,10 +331,31 @@ export function DashboardClient({ user }: DashboardClientProps) {
           </div>
         )
 
+      case "my-timetable":
+        return (
+          <div className="p-6">
+            <FacultyTimetableClient userId={user.id} user={user} />
+          </div>
+        )
+
+      case "student-timetable":
+        return (
+          <div className="p-6">
+            <StudentTimetableClient />
+          </div>
+        )
+
       case "mark-attendance":
         return (
           <div className="p-6">
             <AttendanceMarking />
+          </div>
+        )
+
+      case "attendance-analytics":
+        return (
+          <div className="p-6">
+            <AttendanceAnalytics userRole={user.role as 'faculty' | 'admin'} />
           </div>
         )
 
@@ -293,6 +370,13 @@ export function DashboardClient({ user }: DashboardClientProps) {
         return (
           <div className="p-6">
             <CourseManagement />
+          </div>
+        )
+
+      case "timetable-management":
+        return (
+          <div className="p-6">
+            <TimetableSidebar />
           </div>
         )
 

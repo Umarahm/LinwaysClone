@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DashboardAnnouncements } from "@/components/dashboard-announcements"
+import { StudentMiniTimetable } from "@/components/student/student-mini-timetable"
 
 interface Course {
   id: number;
@@ -129,6 +130,9 @@ export function StudentDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Today's Timetable */}
+      <StudentMiniTimetable />
 
       {/* Available Courses */}
       <Card className="shadow-sm border bg-card">

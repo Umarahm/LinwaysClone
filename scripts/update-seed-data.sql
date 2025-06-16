@@ -65,4 +65,25 @@ INSERT INTO attendance (student_id, course_id, date, status, marked_by) VALUES
 INSERT INTO announcements (title, message, author_id, recipient) VALUES
 ('Mid-term Examination Schedule', 'Mid-term exams will be conducted from Dec 20-25. Please check your individual schedules.', 5, 'all'),
 ('Library Extended Hours', 'Library will remain open until 10 PM during exam period.', 5, 'student'),
-('Faculty Meeting', 'Department meeting scheduled for tomorrow at 3 PM.', 5, 'faculty'); 
+('Faculty Meeting', 'Department meeting scheduled for tomorrow at 3 PM.', 5, 'faculty');
+
+-- Update faculty passwords to "password" (hash: $2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi)
+UPDATE users SET password_hash = '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi' WHERE role = 'faculty';
+
+-- Insert additional faculty members with password "password"
+INSERT INTO users (email, password_hash, full_name, role, department) VALUES
+('dr.emily@presidency.edu', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Dr. Emily Chen', 'faculty', 'Mathematics'),
+('prof.david@presidency.edu', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Prof. David Wilson', 'faculty', 'Physics'),
+('dr.lisa@presidency.edu', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Dr. Lisa Rodriguez', 'faculty', 'Chemistry');
+
+-- Update existing courses to assign to specific faculty
+UPDATE courses SET faculty_id = 5 WHERE code = 'CS201';  -- Dr. Sarah Johnson
+UPDATE courses SET faculty_id = 6 WHERE code = 'CS301';  -- Prof. Michael Brown 
+UPDATE courses SET faculty_id = 5 WHERE code = 'IT401';  -- Dr. Sarah Johnson
+UPDATE courses SET faculty_id = 6 WHERE code = 'CS401';  -- Prof. Michael Brown
+
+-- Insert additional courses for new faculty
+INSERT INTO courses (code, name, description, credits, faculty_id) VALUES
+('MATH301', 'Linear Algebra', 'Advanced linear algebra concepts', 3, 7),  -- Dr. Emily Chen
+('PHYS201', 'Quantum Physics', 'Introduction to quantum mechanics', 4, 8),  -- Prof. David Wilson
+('CHEM301', 'Organic Chemistry', 'Advanced organic chemistry', 3, 9);  -- Dr. Lisa Rodriguez 

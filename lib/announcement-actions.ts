@@ -1,10 +1,10 @@
 "use server"
 
 import { sql } from "./db"
-import { getCurrentUser } from "./auth-actions"
+import { getCurrentUserServer } from "./auth-server"
 
 export async function getAnnouncements() {
-  const user = await getCurrentUser()
+  const user = await getCurrentUserServer()
   if (!user) {
     throw new Error("Unauthorized")
   }
@@ -28,7 +28,7 @@ export async function getAnnouncements() {
 }
 
 export async function createAnnouncement(formData: FormData) {
-  const user = await getCurrentUser()
+  const user = await getCurrentUserServer()
   if (!user || (user.role !== "admin" && user.role !== "faculty")) {
     throw new Error("Unauthorized")
   }

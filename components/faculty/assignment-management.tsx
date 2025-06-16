@@ -59,6 +59,7 @@ export function AssignmentManagement() {
     const [assignments, setAssignments] = React.useState<Assignment[]>([])
     const [courses, setCourses] = React.useState<Course[]>([])
     const [isLoading, setIsLoading] = React.useState(false)
+    const [fetchLoading, setFetchLoading] = React.useState(true)
 
     const [formData, setFormData] = React.useState<AssignmentFormData>({
         title: "",
@@ -69,86 +70,94 @@ export function AssignmentManagement() {
         file: null
     })
 
-    // Mock data - replace with actual API calls
+    // Fetch faculty-specific data
     React.useEffect(() => {
-        setCourses([
-            { id: 1, code: "CS201", name: "Data Structures & Algorithms", enrolledStudents: 45 },
-            { id: 2, code: "CS301", name: "Database Management Systems", enrolledStudents: 38 },
-            { id: 3, code: "IT401", name: "Web Development", enrolledStudents: 52 },
-        ])
-
-        setAssignments([
-            {
-                id: 1,
-                title: "Binary Search Tree Implementation",
-                courseCode: "CS201",
-                courseName: "Data Structures & Algorithms",
-                description: "Implement BST with all operations",
-                dueDate: "2024-12-20",
-                maxMarks: 100,
-                submissionsCount: 32,
-                totalStudents: 45,
-                createdAt: "2024-12-01"
-            },
-            {
-                id: 2,
-                title: "Database Design Project",
-                courseCode: "CS301",
-                courseName: "Database Management Systems",
-                description: "Design a complete database schema for an e-commerce application",
-                dueDate: "2024-12-25",
-                maxMarks: 150,
-                submissionsCount: 28,
-                totalStudents: 38,
-                createdAt: "2024-12-03"
-            },
-            {
-                id: 3,
-                title: "React Portfolio Website",
-                courseCode: "IT401",
-                courseName: "Web Development",
-                description: "Create a personal portfolio using React and modern web technologies",
-                dueDate: "2024-12-30",
-                maxMarks: 200,
-                submissionsCount: 41,
-                totalStudents: 52,
-                createdAt: "2024-12-05"
-            }
-        ])
+        fetchFacultyData()
     }, [])
+
+    const fetchFacultyData = async () => {
+        try {
+            setFetchLoading(true)
+
+            // Fetch faculty courses
+            const coursesResponse = await fetch('/api/faculty/courses')
+            if (coursesResponse.ok) {
+                const coursesData = await coursesResponse.json()
+                const coursesWithEnrollment = await Promise.all(
+                    coursesData.courses.map(async (course: any) => {
+                        try {
+                            const enrollmentResponse = await fetch(`/api/courses/${course.id}/enrollment-count`)
+                            const enrollmentData = await enrollmentResponse.json()
+                            return {
+                                id: course.id,
+                                code: course.code,
+                                name: course.name,
+                                enrolledStudents: enrollmentData.count || 0
+                            }
+                        } catch (error) {
+                            return {
+                                id: course.id,
+                                code: course.code,
+                                name: course.name,
+                                enrolledStudents: 0
+                            }
+                        }
+                    })
+                )
+                setCourses(coursesWithEnrollment)
+            }
+
+            // Fetch faculty assignments
+            const assignmentsResponse = await fetch('/api/faculty/assignments')
+            if (assignmentsResponse.ok) {
+                const assignmentsData = await assignmentsResponse.json()
+                setAssignments(assignmentsData.assignments || [])
+            }
+        } catch (error) {
+            console.error('Error fetching faculty data:', error)
+        } finally {
+            setFetchLoading(false)
+        }
+    }
 
     const handleCreateAssignment = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsLoading(true)
 
-        const selectedCourse = courses.find(c => c.id === parseInt(formData.courseId))
-
-        // Simulate API call
-        setTimeout(() => {
-            const newAssignment: Assignment = {
-                id: assignments.length + 1,
-                title: formData.title,
-                courseCode: selectedCourse?.code || "",
-                courseName: selectedCourse?.name || "",
-                description: formData.description,
-                dueDate: formData.dueDate,
-                maxMarks: formData.maxMarks,
-                submissionsCount: 0,
-                totalStudents: selectedCourse?.enrolledStudents || 0,
-                createdAt: new Date().toISOString().split('T')[0]
-            }
-
-            setAssignments([...assignments, newAssignment])
-            setFormData({
-                title: "",
-                courseId: "",
-                description: "",
-                dueDate: "",
-                maxMarks: 100,
-                file: null
+        try {
+            const response = await fetch('/api/faculty/assignments', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    title: formData.title,
+                    courseId: parseInt(formData.courseId),
+                    description: formData.description,
+                    dueDate: formData.dueDate,
+                    maxMarks: formData.maxMarks,
+                }),
             })
+
+            if (response.ok) {
+                const newAssignment = await response.json()
+                await fetchFacultyData() // Refresh data
+                setFormData({
+                    title: "",
+                    courseId: "",
+                    description: "",
+                    dueDate: "",
+                    maxMarks: 100,
+                    file: null
+                })
+            } else {
+                console.error('Failed to create assignment')
+            }
+        } catch (error) {
+            console.error('Error creating assignment:', error)
+        } finally {
             setIsLoading(false)
-        }, 1000)
+        }
     }
 
     const handleDeleteAssignment = async (assignmentId: number) => {
@@ -156,11 +165,21 @@ export function AssignmentManagement() {
 
         setIsLoading(true)
 
-        // Simulate API call
-        setTimeout(() => {
-            setAssignments(assignments.filter(assignment => assignment.id !== assignmentId))
+        try {
+            const response = await fetch(`/api/faculty/assignments/${assignmentId}`, {
+                method: 'DELETE',
+            })
+
+            if (response.ok) {
+                setAssignments(assignments.filter(assignment => assignment.id !== assignmentId))
+            } else {
+                console.error('Failed to delete assignment')
+            }
+        } catch (error) {
+            console.error('Error deleting assignment:', error)
+        } finally {
             setIsLoading(false)
-        }, 1000)
+        }
     }
 
     const getDueDateStatus = (dueDate: string) => {
@@ -186,6 +205,14 @@ export function AssignmentManagement() {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0] || null
         setFormData({ ...formData, file })
+    }
+
+    if (fetchLoading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="text-lg text-foreground">Loading assignments...</div>
+            </div>
+        )
     }
 
     return (

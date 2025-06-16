@@ -5,8 +5,8 @@ require('dotenv').config({ path: '.env.local' });
 const sql = neon(process.env.DATABASE_URL);
 
 async function hashPassword(password) {
-  const salt = process.env.COOKIE_SECRET || process.env.SESSION_SECRET || "default-salt";
-  return `$2b$10$${Buffer.from(password + salt).toString("base64")}`;
+  const bcrypt = require('bcryptjs');
+  return await bcrypt.hash(password, 10);
 }
 
 async function createTables() {
@@ -105,6 +105,32 @@ async function createTables() {
     )
   `;
 
+  // Create timetable table
+  await sql`
+    CREATE TABLE IF NOT EXISTS timetable (
+        id SERIAL PRIMARY KEY,
+        course_id INTEGER REFERENCES courses(id),
+        faculty_id INTEGER REFERENCES users(id),
+        day VARCHAR(20) NOT NULL CHECK (day IN ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')),
+        start_time TIME NOT NULL,
+        end_time TIME NOT NULL,
+        room VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `;
+
+  // Create course_faculty relationship table for multi-faculty courses
+  await sql`
+    CREATE TABLE IF NOT EXISTS course_faculty (
+        id SERIAL PRIMARY KEY,
+        course_id INTEGER REFERENCES courses(id),
+        faculty_id INTEGER REFERENCES users(id),
+        is_primary BOOLEAN DEFAULT false,
+        assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(course_id, faculty_id)
+    )
+  `;
+
   console.log('✅ Tables created successfully');
 }
 
@@ -116,6 +142,8 @@ async function seedData() {
   await sql`DELETE FROM attendance`;
   await sql`DELETE FROM announcements`;
   await sql`DELETE FROM assignments`;
+  await sql`DELETE FROM timetable`;
+  await sql`DELETE FROM course_faculty`;
   await sql`DELETE FROM enrollments`;
   await sql`DELETE FROM courses`;
   await sql`DELETE FROM users`;
@@ -175,6 +203,28 @@ async function seedData() {
     ('React Portfolio Website', 'Create a personal portfolio using React', ${courses[2].id}, ${profMikeId}, '2024-12-25 23:59:00', 100)
   `;
   console.log('✅ Assignments created');
+
+  // Insert course-faculty relationships
+  await sql`
+    INSERT INTO course_faculty (course_id, faculty_id, is_primary) VALUES
+    (${courses[0].id}, ${drSarahId}, true),
+    (${courses[1].id}, ${drSarahId}, true),
+    (${courses[2].id}, ${profMikeId}, true),
+    (${courses[3].id}, ${drSarahId}, true)
+  `;
+  console.log('✅ Course-faculty relationships created');
+
+  // Insert sample timetable entries
+  await sql`
+    INSERT INTO timetable (course_id, faculty_id, day, start_time, end_time, room) VALUES
+    (${courses[0].id}, ${drSarahId}, 'Monday', '09:00', '10:30', 'CS-101'),
+    (${courses[1].id}, ${drSarahId}, 'Tuesday', '11:00', '12:30', 'CS-102'),
+    (${courses[2].id}, ${profMikeId}, 'Wednesday', '14:00', '15:30', 'IT-Lab-1'),
+    (${courses[3].id}, ${drSarahId}, 'Thursday', '10:00', '11:30', 'CS-103'),
+    (${courses[0].id}, ${drSarahId}, 'Friday', '09:30', '11:00', 'CS-101'),
+    (${courses[2].id}, ${profMikeId}, 'Friday', '13:00', '14:30', 'IT-Lab-2')
+  `;
+  console.log('✅ Timetable entries created');
 
   console.log('✅ Database seeded successfully');
   console.log('\nDemo Login Credentials:');

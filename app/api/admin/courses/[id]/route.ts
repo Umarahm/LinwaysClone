@@ -8,22 +8,29 @@ export async function PUT(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { code, name, description, credits, faculty_id } = await request.json();
+        const { code, name, description, credits, faculty_ids, primary_faculty_id } = await request.json();
         const resolvedParams = await params;
         const courseId = parseInt(resolvedParams.id);
 
         // Validate required fields
-        if (!code || !name || !credits || !faculty_id) {
+        if (!code || !name || !credits || !faculty_ids || !Array.isArray(faculty_ids) || faculty_ids.length === 0) {
             return NextResponse.json(
-                { error: 'Course code, name, credits, and faculty are required' },
+                { error: 'Course code, name, credits, and at least one faculty member are required' },
+                { status: 400 }
+            );
+        }
+
+        if (!primary_faculty_id || !faculty_ids.includes(primary_faculty_id)) {
+            return NextResponse.json(
+                { error: 'Primary faculty must be one of the assigned faculty members' },
                 { status: 400 }
             );
         }
 
         // Check if course exists
         const existingCourse = await sql`
-      SELECT id FROM courses WHERE id = ${courseId}
-    `;
+            SELECT id FROM courses WHERE id = ${courseId}
+        `;
 
         if (existingCourse.length === 0) {
             return NextResponse.json(
@@ -34,8 +41,8 @@ export async function PUT(
 
         // Check if course code is already taken by another course
         const codeCheck = await sql`
-      SELECT id FROM courses WHERE code = ${code} AND id != ${courseId}
-    `;
+            SELECT id FROM courses WHERE code = ${code} AND id != ${courseId}
+        `;
 
         if (codeCheck.length > 0) {
             return NextResponse.json(
@@ -44,26 +51,38 @@ export async function PUT(
             );
         }
 
-        // Verify faculty exists
-        const faculty = await sql`
-      SELECT id FROM users WHERE id = ${faculty_id} AND role = 'faculty'
-    `;
+        // Verify all faculty members exist
+        const facultyCheck = await sql`
+            SELECT id FROM users 
+            WHERE id = ANY(${faculty_ids}) AND role = 'faculty'
+        `;
 
-        if (faculty.length === 0) {
+        if (facultyCheck.length !== faculty_ids.length) {
             return NextResponse.json(
-                { error: 'Invalid faculty member selected' },
+                { error: 'One or more selected faculty members are invalid' },
                 { status: 400 }
             );
         }
 
-        // Update course
+        // Update course (keep faculty_id for backward compatibility with primary faculty)
         const updatedCourse = await sql`
-      UPDATE courses 
-      SET code = ${code}, name = ${name}, description = ${description}, 
-          credits = ${credits}, faculty_id = ${faculty_id}
-      WHERE id = ${courseId}
-      RETURNING *
-    `;
+            UPDATE courses 
+            SET code = ${code}, name = ${name}, description = ${description}, 
+                credits = ${credits}, faculty_id = ${primary_faculty_id}
+            WHERE id = ${courseId}
+            RETURNING *
+        `;
+
+        // Update faculty assignments - remove all existing and add new ones
+        await sql`DELETE FROM course_faculty WHERE course_id = ${courseId}`;
+
+        // Add new faculty assignments
+        for (const facultyId of faculty_ids) {
+            await sql`
+                INSERT INTO course_faculty (course_id, faculty_id, is_primary)
+                VALUES (${courseId}, ${facultyId}, ${facultyId === primary_faculty_id})
+            `;
+        }
 
         return NextResponse.json({
             message: 'Course updated successfully',
@@ -88,8 +107,8 @@ export async function DELETE(
 
         // Check if course exists
         const course = await sql`
-      SELECT id FROM courses WHERE id = ${courseId}
-    `;
+            SELECT id FROM courses WHERE id = ${courseId}
+        `;
 
         if (course.length === 0) {
             return NextResponse.json(
@@ -103,6 +122,7 @@ export async function DELETE(
         await sql`DELETE FROM submissions s USING assignments a WHERE s.assignment_id = a.id AND a.course_id = ${courseId}`;
         await sql`DELETE FROM assignments WHERE course_id = ${courseId}`;
         await sql`DELETE FROM enrollments WHERE course_id = ${courseId}`;
+        await sql`DELETE FROM course_faculty WHERE course_id = ${courseId}`;
 
         // Delete the course
         await sql`DELETE FROM courses WHERE id = ${courseId}`;

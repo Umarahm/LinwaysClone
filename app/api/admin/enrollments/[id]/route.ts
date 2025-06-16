@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db"
-import { getCurrentUser } from "@/lib/auth-actions"
+import { getCurrentUserFromRequest } from "@/lib/auth-server"
 
 export async function DELETE(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const user = await getCurrentUser()
+        const user = await getCurrentUserFromRequest(request)
         if (!user || user.role !== "admin") {
             return NextResponse.json(
                 { error: "Unauthorized - Admin access required" },
