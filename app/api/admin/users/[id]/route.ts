@@ -6,11 +6,12 @@ const sql = neon(process.env.DATABASE_URL!);
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const { email, password, full_name, role, department } = await request.json();
-        const userId = parseInt(params.id);
+        const resolvedParams = await params;
+        const userId = parseInt(resolvedParams.id);
 
         // Validate required fields
         if (!email || !full_name || !role || !department) {
@@ -85,10 +86,11 @@ export async function PUT(
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const userId = parseInt(params.id);
+        const resolvedParams = await params;
+        const userId = parseInt(resolvedParams.id);
 
         // Check if user exists and is not admin
         const user = await sql`
