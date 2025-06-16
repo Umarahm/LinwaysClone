@@ -16,6 +16,8 @@ interface Course {
   faculty_name: string;
   credits: number;
   created_at: string;
+  assignment_count?: number;
+  enrolled_count?: number;
 }
 
 export function StudentDashboard() {
@@ -106,7 +108,7 @@ export function StudentDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-amber-100 text-sm font-medium">Assignments</p>
-                <p className="text-3xl font-bold">{enrollments.reduce((sum, course) => sum + course.assignment_count, 0)}</p>
+                <p className="text-3xl font-bold">{enrollments.reduce((sum, course) => sum + (course.assignment_count || 0), 0)}</p>
                 <p className="text-amber-100 text-xs mt-1">Total</p>
               </div>
               <FileText className="w-8 h-8 text-amber-200" />
