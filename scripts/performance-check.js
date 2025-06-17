@@ -70,7 +70,6 @@ function checkReactMemoUsage() {
     console.log('⚛️  Checking React.memo Usage...');
 
     const componentsToCheck = [
-        'components/dashboard-summary-cards.tsx',
         'components/theme-provider.tsx'
     ];
 

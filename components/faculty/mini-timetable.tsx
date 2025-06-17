@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { getTimetableByUser, checkTimetableAttendance } from '@/lib/timetable-actions'
 import { Clock, MapPin, BookOpen, Users, Check } from 'lucide-react'
-import { toast } from '@/hooks/use-toast'
+import { useToast } from '@/hooks/use-toast'
 
 interface TimetableEntry {
     id: number
@@ -54,6 +54,7 @@ const facultyColors = [
 ]
 
 export function MiniTimetable({ userId, userRole }: MiniTimetableProps) {
+    const { toast } = useToast()
     const [todayClasses, setTodayClasses] = useState<TimetableEntry[]>([])
     const [attendanceStatus, setAttendanceStatus] = useState<{ [key: number]: boolean }>({})
     const [loading, setLoading] = useState(true)
@@ -137,7 +138,8 @@ export function MiniTimetable({ userId, userRole }: MiniTimetableProps) {
             toast({
                 title: "Access Denied",
                 description: "You can only mark attendance for your own classes.",
-                variant: "destructive"
+                variant: "warning" as any,
+                duration: 5000,
             })
             return
         }

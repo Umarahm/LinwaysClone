@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
+import { useToast } from "@/hooks/use-toast"
 
 interface Submission {
     id: number
@@ -44,6 +45,7 @@ interface Assignment {
 }
 
 export function AssignmentSubmissions() {
+    const { toast } = useToast()
     const [submissions, setSubmissions] = React.useState<Submission[]>([])
     const [assignments, setAssignments] = React.useState<Assignment[]>([])
     const [selectedAssignment, setSelectedAssignment] = React.useState<string>("all")
@@ -112,11 +114,19 @@ export function AssignmentSubmissions() {
                 document.body.removeChild(a)
             } else {
                 const errorData = await response.json()
-                alert(errorData.message || "Failed to download file")
+                toast({
+                    variant: "warning",
+                    title: "Download Failed",
+                    description: errorData.message || "Failed to download file",
+                })
             }
         } catch (error) {
             console.error('Download error:', error)
-            alert("Failed to download file. Please try again.")
+            toast({
+                variant: "warning",
+                title: "Download Failed",
+                description: "Failed to download file. Please try again.",
+            })
         }
     }
 
@@ -145,13 +155,25 @@ export function AssignmentSubmissions() {
                 ))
                 setGradingSubmission(null)
                 setGradeForm({ grade: "", feedback: "" })
-                alert("Grade submitted successfully!")
+                toast({
+                    variant: "success",
+                    title: "Grade Submitted",
+                    description: "Grade submitted successfully!",
+                })
             } else {
-                alert(data.message || "Failed to submit grade")
+                toast({
+                    variant: "warning",
+                    title: "Grading Failed",
+                    description: data.message || "Failed to submit grade",
+                })
             }
         } catch (error) {
             console.error('Grading error:', error)
-            alert("Failed to submit grade. Please try again.")
+            toast({
+                variant: "warning",
+                title: "Grading Failed",
+                description: "Failed to submit grade. Please try again.",
+            })
         }
     }
 

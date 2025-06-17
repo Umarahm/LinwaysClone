@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useToast } from "@/hooks/use-toast"
 
 interface Assignment {
   id: number
@@ -31,19 +32,28 @@ interface AssignmentsPageProps {
 }
 
 export function AssignmentsPage({ assignments }: AssignmentsPageProps) {
+  const { toast } = useToast()
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null)
   const [uploadingId, setUploadingId] = React.useState<number | null>(null)
   const [filterStatus, setFilterStatus] = React.useState<"all" | "pending" | "submitted">("all")
 
   const handleFileUpload = async (assignmentId: number) => {
     if (!selectedFile) {
-      alert("Please select a file to upload")
+      toast({
+        variant: "warning",
+        title: "No File Selected",
+        description: "Please select a file to upload",
+      })
       return
     }
 
     const maxSize = 10 * 1024 * 1024 // 10MB
     if (selectedFile.size > maxSize) {
-      alert("File size too large. Maximum 10MB allowed.")
+      toast({
+        variant: "warning",
+        title: "File Too Large",
+        description: "File size too large. Maximum 10MB allowed.",
+      })
       return
     }
 
@@ -58,12 +68,20 @@ export function AssignmentsPage({ assignments }: AssignmentsPageProps) {
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
       console.log(`Uploading file for assignment ${assignmentId}:`, selectedFile.name)
-      alert("Assignment submitted successfully!")
+      toast({
+        variant: "success",
+        title: "Assignment Submitted",
+        description: "Assignment submitted successfully!",
+      })
 
       setSelectedFile(null)
     } catch (error) {
       console.error('Upload error:', error)
-      alert("Failed to upload file. Please try again.")
+      toast({
+        variant: "warning",
+        title: "Upload Failed",
+        description: "Failed to upload file. Please try again.",
+      })
     } finally {
       setUploadingId(null)
     }

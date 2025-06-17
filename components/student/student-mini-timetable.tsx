@@ -152,16 +152,16 @@ export function StudentMiniTimetable() {
 
     if (loading) {
         return (
-            <Card className="border-border">
+            <Card className="border-0 bg-transparent text-white">
                 <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                        <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <CardTitle className="flex items-center gap-2 text-lg text-white">
+                        <BookOpen className="h-5 w-5 text-blue-300" />
                         Today's Schedule
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-center justify-center h-20">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400"></div>
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-300"></div>
                     </div>
                 </CardContent>
             </Card>
@@ -170,18 +170,18 @@ export function StudentMiniTimetable() {
 
     if (todayClasses.length === 0) {
         return (
-            <Card className="border-border">
+            <Card className="border-0 bg-transparent text-white">
                 <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                        <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <CardTitle className="flex items-center gap-2 text-lg text-white">
+                        <BookOpen className="h-5 w-5 text-blue-300" />
                         Today's Schedule
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="text-center py-6">
-                        <GraduationCap className="h-12 w-12 text-muted-foreground/50 mx-auto mb-2" />
-                        <div className="text-muted-foreground text-sm mb-1">No classes scheduled</div>
-                        <p className="text-muted-foreground/70 text-xs">Enjoy your free day!</p>
+                        <GraduationCap className="h-12 w-12 text-white/50 mx-auto mb-2" />
+                        <div className="text-white/80 text-sm mb-1">No classes scheduled</div>
+                        <p className="text-white/60 text-xs">Enjoy your free day!</p>
                     </div>
                 </CardContent>
             </Card>
@@ -189,20 +189,20 @@ export function StudentMiniTimetable() {
     }
 
     return (
-        <Card className="border-border">
+        <Card className="border-0 bg-transparent text-white">
             <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                        <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <CardTitle className="flex items-center gap-2 text-lg text-white">
+                        <BookOpen className="h-5 w-5 text-blue-300" />
                         Today's Schedule
                     </CardTitle>
-                    <Badge variant="outline" className="text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-700 text-xs">
+                    <Badge variant="secondary" className="bg-white/20 text-white border-white/30 text-xs">
                         {today} • {todayClasses.length} {todayClasses.length === 1 ? 'class' : 'classes'}
                     </Badge>
                 </div>
             </CardHeader>
             <CardContent>
-                <div className="space-y-3">
+                <div className={todayClasses.length > 1 ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" : "space-y-3"}>
                     {todayClasses
                         .sort((a, b) => a.start_time.localeCompare(b.start_time))
                         .map((entry) => {
@@ -216,64 +216,96 @@ export function StudentMiniTimetable() {
                                 <div
                                     key={entry.id}
                                     className={`
-                    ${colorScheme.bg} ${colorScheme.border} border rounded-lg p-3
+                    bg-white/10 border border-white/20 rounded-lg p-3
                     transition-all duration-200 relative cursor-pointer
-                    hover:shadow-lg hover:scale-[1.02]
-                    ${isCurrent ? 'ring-2 ring-red-400 dark:ring-red-600 shadow-md' : ''}
+                    hover:bg-white/15 hover:scale-[1.02]
+                    ${isCurrent ? 'ring-2 ring-red-400 shadow-md' : ''}
                     ${past ? 'opacity-60' : ''}
-                    ${attendanceClass}
                   `}
                                 >
                                     {getAttendanceIndicator(entry.id)}
-                                    {/* Status indicators */}
-                                    <div className="absolute top-2 right-2 flex gap-1">
-                                        {isCurrent && (
-                                            <Badge className="bg-red-500 text-white text-xs px-1.5 py-0.5 h-auto">
-                                                LIVE
-                                            </Badge>
-                                        )}
-                                        {upcoming && (
-                                            <Badge variant="outline" className="text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-700 text-xs px-1.5 py-0.5 h-auto">
-                                                Upcoming
-                                            </Badge>
-                                        )}
-                                        {past && (
-                                            <Badge variant="outline" className="text-muted-foreground border-muted text-xs px-1.5 py-0.5 h-auto">
-                                                Completed
-                                            </Badge>
+
+                                    {/* Mobile Layout - Simple view */}
+                                    <div className="md:hidden space-y-1">
+                                        <div className="flex items-center justify-between">
+                                            <div className="font-semibold text-sm text-white truncate pr-2">
+                                                {entry.course_name}
+                                            </div>
+                                            <div className="text-xs font-semibold text-white whitespace-nowrap">
+                                                {formatTime(entry.start_time)}
+                                            </div>
+                                        </div>
+                                        {(isCurrent || upcoming || past) && (
+                                            <div className="flex gap-1">
+                                                {isCurrent && (
+                                                    <Badge className="bg-red-500 text-white text-xs px-1.5 py-0.5 h-auto">
+                                                        LIVE
+                                                    </Badge>
+                                                )}
+                                                {upcoming && (
+                                                    <Badge variant="secondary" className="bg-orange-500/20 text-orange-200 border-orange-400/30 text-xs px-1.5 py-0.5 h-auto">
+                                                        Upcoming
+                                                    </Badge>
+                                                )}
+                                                {past && (
+                                                    <Badge variant="secondary" className="bg-white/10 text-white/60 border-white/30 text-xs px-1.5 py-0.5 h-auto">
+                                                        Completed
+                                                    </Badge>
+                                                )}
+                                            </div>
                                         )}
                                     </div>
 
-                                    <div className="grid grid-cols-12 gap-3 items-center">
-                                        {/* Time */}
-                                        <div className="col-span-3">
-                                            <div className={`text-sm font-semibold ${colorScheme.text}`}>
-                                                {formatTime(entry.start_time)}
+                                    {/* Desktop/Tablet Layout - Full view */}
+                                    <div className="hidden md:block space-y-2">
+                                        {/* Status indicators and Time */}
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex gap-1">
+                                                {isCurrent && (
+                                                    <Badge className="bg-red-500 text-white text-xs px-1.5 py-0.5 h-auto">
+                                                        LIVE
+                                                    </Badge>
+                                                )}
+                                                {upcoming && (
+                                                    <Badge variant="secondary" className="bg-orange-500/20 text-orange-200 border-orange-400/30 text-xs px-1.5 py-0.5 h-auto">
+                                                        Upcoming
+                                                    </Badge>
+                                                )}
+                                                {past && (
+                                                    <Badge variant="secondary" className="bg-white/10 text-white/60 border-white/30 text-xs px-1.5 py-0.5 h-auto">
+                                                        Completed
+                                                    </Badge>
+                                                )}
                                             </div>
-                                            <div className={`text-xs ${colorScheme.text} opacity-70`}>
-                                                {formatTime(entry.end_time)}
+                                            <div className="text-right">
+                                                <div className="text-xs font-semibold text-white">
+                                                    {formatTime(entry.start_time)}
+                                                </div>
+                                                <div className="text-xs text-white/60">
+                                                    {formatTime(entry.end_time)}
+                                                </div>
                                             </div>
                                         </div>
 
                                         {/* Course Info */}
-                                        <div className="col-span-6">
-                                            <div className={`font-semibold text-sm ${colorScheme.text}`}>
+                                        <div>
+                                            <div className="font-semibold text-sm text-white">
                                                 {entry.course_code}
                                             </div>
-                                            <div className={`text-xs ${colorScheme.text} opacity-80 truncate`}>
+                                            <div className="text-xs text-white/80 truncate">
                                                 {entry.course_name}
-                                            </div>
-                                            <div className={`flex items-center gap-1 text-xs ${colorScheme.text} opacity-70 mt-1`}>
-                                                <MapPin className="w-3 h-3" />
-                                                <span>{entry.room}</span>
                                             </div>
                                         </div>
 
-                                        {/* Faculty Info */}
-                                        <div className="col-span-3 text-right">
-                                            <div className={`flex items-center justify-end gap-1 text-xs ${colorScheme.text} opacity-80`}>
+                                        {/* Room and Faculty Info */}
+                                        <div className="flex items-center justify-between text-xs text-white/70">
+                                            <div className="flex items-center gap-1">
+                                                <MapPin className="w-3 h-3" />
+                                                <span>{entry.room}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
                                                 <User className="w-3 h-3" />
-                                                <span className="truncate text-right">
+                                                <span className="truncate">
                                                     {entry.faculty_name.split(' ').slice(-1)[0]}
                                                 </span>
                                             </div>
@@ -282,10 +314,10 @@ export function StudentMiniTimetable() {
 
                                     {/* Progress indicator for current class */}
                                     {isCurrent && (
-                                        <div className="mt-3 pt-2 border-t border-current/20">
+                                        <div className="mt-3 pt-2 border-t border-white/20">
                                             <div className="flex items-center gap-2">
                                                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                                                <span className={`text-xs font-medium ${colorScheme.text}`}>
+                                                <span className="text-xs font-medium text-white">
                                                     Class in progress
                                                 </span>
                                             </div>
@@ -294,8 +326,8 @@ export function StudentMiniTimetable() {
 
                                     {/* Time until class starts for upcoming classes */}
                                     {upcoming && (
-                                        <div className="mt-3 pt-2 border-t border-current/20">
-                                            <div className={`text-xs ${colorScheme.text} opacity-70`}>
+                                        <div className="mt-3 pt-2 border-t border-white/20">
+                                            <div className="text-xs text-white/70">
                                                 Starts in {Math.floor((parseInt(entry.start_time.replace(':', '')) - currentTime) / 100)} hour(s)
                                             </div>
                                         </div>
@@ -307,16 +339,16 @@ export function StudentMiniTimetable() {
 
                 {/* Next class indicator if no current class */}
                 {todayClasses.length > 0 && !todayClasses.some(entry => isCurrentClass(entry.start_time, entry.end_time)) && (
-                    <div className="mt-4 pt-3 border-t border-border">
+                    <div className="mt-4 pt-3 border-t border-white/20">
                         <div className="text-center">
                             {todayClasses.some(entry => isUpcoming(entry.start_time)) ? (
-                                <div className="text-xs text-muted-foreground">
+                                <div className="text-xs text-white/70">
                                     Next class: {formatTime(todayClasses
                                         .filter(entry => isUpcoming(entry.start_time))
                                         .sort((a, b) => a.start_time.localeCompare(b.start_time))[0]?.start_time)}
                                 </div>
                             ) : (
-                                <div className="text-xs text-muted-foreground">
+                                <div className="text-xs text-white/70">
                                     All classes completed for today
                                 </div>
                             )}

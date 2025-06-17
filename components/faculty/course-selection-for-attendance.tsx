@@ -54,9 +54,10 @@ export function CourseSelectionForAttendance() {
         } catch (error) {
             console.error('Error fetching timetable:', error)
             toast({
-                title: "Error",
-                description: "Failed to load your courses",
-                variant: "destructive"
+                title: "Loading Error",
+                description: "Failed to load your courses. Please refresh the page.",
+                variant: "warning" as any,
+                duration: 5000,
             })
         } finally {
             setIsLoading(false)
@@ -123,9 +124,10 @@ export function CourseSelectionForAttendance() {
     const handleMarkAttendance = (timetableEntry?: TimetableEntry) => {
         if (!selectedCourse) {
             toast({
-                title: "Please select a course",
+                title: "Course Required",
                 description: "You must select a course before marking attendance",
-                variant: "destructive"
+                variant: "warning" as any,
+                duration: 5000,
             })
             return
         }
@@ -135,9 +137,10 @@ export function CourseSelectionForAttendance() {
 
         if (!entryToUse) {
             toast({
-                title: "Error",
+                title: "Schedule Not Found",
                 description: "No timetable entry found for this course on the selected day",
-                variant: "destructive"
+                variant: "warning" as any,
+                duration: 5000,
             })
             return
         }

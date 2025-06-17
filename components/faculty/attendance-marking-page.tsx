@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock, MapPin, Users, Check, X, Save, ArrowLeft, UserCheck, GraduationCap, User } from "lucide-react"
-import { toast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { markAttendance, checkAttendanceStatus } from "@/lib/attendance-actions"
 
 interface Student {
@@ -47,6 +47,7 @@ export function FacultyAttendanceMarking({
     day
 }: FacultyAttendanceMarkingProps) {
     const router = useRouter()
+    const { toast } = useToast()
     const [attendanceData, setAttendanceData] = useState<{ [key: number]: 'present' | 'absent' }>({})
     const [saving, setSaving] = useState(false)
     const [isAlreadyMarked, setIsAlreadyMarked] = useState(false)
@@ -159,43 +160,51 @@ export function FacultyAttendanceMarking({
             const result = await markAttendance(formData)
 
             if (result.success) {
-                // Show sequential toast messages for faculty
+                // Show sequential toast messages for faculty with proper duration and animations
                 toast({
-                    title: "✅ Attendance marked successfully",
-                    description: `Recorded attendance for ${attendanceArray.length} students`,
+                    title: "Attendance Saved Successfully!",
+                    description: `Recorded attendance for ${attendanceArray.length} students - ${new Date().toLocaleTimeString()}`,
+                    duration: 5000,
+                    variant: "success" as any,
                 })
 
                 setTimeout(() => {
                     toast({
-                        title: "📊 Updated Student attendance",
-                        description: "Student attendance records have been updated in the system",
+                        title: "Student Records Updated",
+                        description: "All student attendance records have been synchronized with the database",
+                        duration: 5000,
+                        variant: "success" as any,
                     })
-                }, 1000)
+                }, 1500)
 
                 setTimeout(() => {
                     toast({
-                        title: "📝 Daily Work updated",
-                        description: "Daily work progress has been tracked and recorded",
+                        title: "Daily Progress Tracked",
+                        description: "Daily work progress has been logged and is ready for review",
+                        duration: 5000,
+                        variant: "success" as any,
                     })
-                }, 2000)
+                }, 3000)
 
                 // Redirect to dashboard with timetable sidebar after a short delay
                 setTimeout(() => {
                     router.push('/dashboard?tab=my-timetable')
-                }, 3000)
+                }, 6000)
             } else {
                 toast({
                     title: "Failed to Save Attendance",
-                    description: result.message,
-                    variant: "destructive"
+                    description: result.message || "An error occurred while saving attendance data",
+                    variant: "warning" as any,
+                    duration: 5000,
                 })
             }
         } catch (error) {
             console.error('Error saving attendance:', error)
             toast({
-                title: "Error",
-                description: "An unexpected error occurred while saving attendance.",
-                variant: "destructive"
+                title: "Unexpected Error",
+                description: "An unexpected error occurred while saving attendance. Please try again.",
+                variant: "warning" as any,
+                duration: 5000,
             })
         } finally {
             setSaving(false)

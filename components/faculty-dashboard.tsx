@@ -1,13 +1,14 @@
 "use client"
 
 import * as React from "react"
-import { BookOpen, Users, FileText, TrendingUp } from "lucide-react"
+import { BookOpen, Users, FileText, TrendingUp, Clock, Calendar, GraduationCap, BarChart3, Award, Target } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DashboardAnnouncements } from "@/components/dashboard-announcements"
 import { MiniTimetable } from "@/components/faculty/mini-timetable"
+import { Progress } from "@/components/ui/progress"
 
 interface Course {
   id: number;
@@ -71,180 +72,254 @@ export function FacultyDashboard({ user }: FacultyDashboardProps) {
 
   if (loading) {
     return (
-      <div className="p-6 space-y-6 bg-background min-h-screen">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-lg text-foreground">Loading dashboard...</div>
+      <div className="animated-gradient-bg relative overflow-hidden" style={{
+        minHeight: '100vh',
+        padding: '2rem'
+      }}>
+        {/* Animated Background Elements */}
+        <div className="gradient-orb"></div>
+        <div className="gradient-orb"></div>
+        <div className="gradient-orb"></div>
+        <div className="gradient-mesh"></div>
+
+        <div className="flex justify-center items-center h-64 relative z-10">
+          <div className="faculty-glass rounded-2xl p-8 text-center glow-effect">
+            <div className="faculty-pulse w-12 h-12 mx-auto mb-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-500"></div>
+            <div className="text-lg font-semibold text-foreground">Loading your dashboard...</div>
+            <div className="text-sm text-muted-foreground mt-2">Preparing your teaching insights</div>
+          </div>
         </div>
       </div>
     );
   }
 
+  const completionRate = stats.totalAssignments > 0 ? ((stats.totalAssignments - stats.pendingAssignments) / stats.totalAssignments) * 100 : 0;
+  const totalCredits = courses.reduce((acc, course) => acc + course.credits, 0);
+
   return (
-    <div className="p-6 space-y-6 bg-background min-h-screen">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Faculty Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
-            Welcome, {user?.fullName || 'Faculty'} - Manage your courses and students
-          </p>
+    <div className="animated-gradient-bg relative overflow-hidden" style={{
+      minHeight: 'calc(100vh - 5rem)',
+      padding: '1rem',
+      paddingTop: '0'
+    }}>
+      {/* Animated Background Elements */}
+      <div className="gradient-orb"></div>
+      <div className="gradient-orb"></div>
+      <div className="gradient-orb"></div>
+      <div className="gradient-mesh"></div>
+
+      {/* Hero Section */}
+      <div className="max-w-7xl mx-auto relative z-10 pt-6">
+        <div className="faculty-glass rounded-3xl p-8 mb-8 faculty-shimmer subtle-wave glow-effect">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="faculty-floating w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center breathing-glow">
+                  <GraduationCap className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl lg:text-4xl font-bold text-white">
+                    Welcome back, {user?.fullName?.split(' ')[0] || 'Professor'}! 👋
+                  </h1>
+                  <p className="text-white/80 text-lg font-medium">
+                    {user?.department && `${user.department} Department`} • Ready to inspire minds today?
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Enhanced Info Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="faculty-glass rounded-2xl p-4 text-center glow-effect">
+                <div className="flex items-center justify-center mb-2">
+                  <BookOpen className="w-5 h-5 text-white/80 mr-2" />
+                </div>
+                <div className="text-2xl font-bold text-white">{courses.length}</div>
+                <div className="text-white/80 text-sm">Active Courses</div>
+              </div>
+
+              <div className="faculty-glass rounded-2xl p-4 text-center glow-effect">
+                <div className="flex items-center justify-center mb-2">
+                  <Clock className="w-5 h-5 text-white/80 mr-2" />
+                </div>
+                <div className="text-2xl font-bold text-white">{totalCredits}</div>
+                <div className="text-white/80 text-sm">Credit Hours</div>
+              </div>
+
+              <div className="faculty-glass rounded-2xl p-4 text-center glow-effect">
+                <div className="flex items-center justify-center mb-2">
+                  <FileText className="w-5 h-5 text-white/80 mr-2" />
+                </div>
+                <div className="text-2xl font-bold text-white">{stats.pendingAssignments}</div>
+                <div className="text-white/80 text-sm">Pending Grading</div>
+              </div>
+
+              <div className="faculty-glass rounded-2xl p-4 text-center glow-effect">
+                <div className="flex items-center justify-center mb-2">
+                  <Users className="w-5 h-5 text-white/80 mr-2" />
+                </div>
+                <div className="text-2xl font-bold text-white">{stats.totalStudents}</div>
+                <div className="text-white/80 text-sm">Total Students</div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 text-white border-0">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-100 text-sm font-medium">Courses Taught</p>
-                <p className="text-3xl font-bold">{courses.length}</p>
-                <p className="text-blue-100 text-xs mt-1">This semester</p>
+        {/* Today's Schedule */}
+        <div className="mb-8">
+          {user && (
+            <div className="faculty-glass rounded-3xl p-6 glow-effect subtle-wave">
+              <div className="flex items-center gap-3 mb-6">
+                <Calendar className="w-6 h-6 text-white" />
+                <h2 className="text-2xl font-bold text-white">Today's Schedule</h2>
               </div>
-              <BookOpen className="w-8 h-8 text-blue-200" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-r from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-700 text-white border-0">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-emerald-100 text-sm font-medium">Total Credits</p>
-                <p className="text-3xl font-bold">{courses.reduce((acc, course) => acc + course.credits, 0)}</p>
-                <p className="text-emerald-100 text-xs mt-1">Teaching load</p>
-              </div>
-              <TrendingUp className="w-8 h-8 text-emerald-200" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-r from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 text-white border-0">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-amber-100 text-sm font-medium">Assignments</p>
-                <p className="text-3xl font-bold">{stats.pendingAssignments}</p>
-                <p className="text-amber-100 text-xs mt-1">Pending grading</p>
-              </div>
-              <FileText className="w-8 h-8 text-amber-200" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-r from-purple-500 to-purple-600 dark:from-purple-600 dark:to-purple-700 text-white border-0">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-purple-100 text-sm font-medium">Students</p>
-                <p className="text-3xl font-bold">{stats.totalStudents}</p>
-                <p className="text-purple-100 text-xs mt-1">Total enrolled</p>
-              </div>
-              <Users className="w-8 h-8 text-purple-200" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Today's Timetable */}
-      {user && (
-        <MiniTimetable userId={user.id} userRole={user.role} />
-      )}
-
-      {/* Courses Taught */}
-      <Card className="shadow-sm border bg-card">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-card-foreground">
-            <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            My Courses
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-muted-foreground">Course Code</TableHead>
-                <TableHead className="text-muted-foreground">Course Name</TableHead>
-                <TableHead className="text-muted-foreground">Faculty</TableHead>
-                <TableHead className="text-muted-foreground">Credits</TableHead>
-                <TableHead className="text-muted-foreground">Status</TableHead>
-                <TableHead className="text-muted-foreground">Created</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {courses.map((course) => (
-                <TableRow key={course.id} className="hover:bg-muted/50">
-                  <TableCell className="font-medium text-foreground">{course.code}</TableCell>
-                  <TableCell className="text-foreground">{course.name}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-1">
-                      {course.all_faculty_names ? (
-                        course.all_faculty_names.split(', ').map((facultyName, index) => (
-                          <Badge
-                            key={index}
-                            variant={index === 0 && course.is_primary ? "default" : "outline"}
-                            className="text-xs w-fit"
-                          >
-                            {index === 0 && course.is_primary && '👑 '}
-                            {facultyName}
-                          </Badge>
-                        ))
-                      ) : (
-                        <Badge variant="outline" className="text-xs">No Faculty Assigned</Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{course.credits}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="default">Active</Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {new Date(course.created_at).toLocaleDateString()}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          {courses.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              No courses assigned yet. Contact admin to get courses assigned to you.
+              <MiniTimetable userId={user.id} userRole={user.role} />
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Course Statistics */}
-        <Card className="shadow-sm border bg-card">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-card-foreground">
-              <TrendingUp className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-              Quick Stats
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-              <span className="text-foreground">Courses Teaching</span>
-              <Badge variant="default">{courses.length}</Badge>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-              <span className="text-foreground">Total Credits</span>
-              <Badge variant="secondary">{courses.reduce((acc, course) => acc + course.credits, 0)}</Badge>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-              <span className="text-foreground">Total Assignments</span>
-              <Badge variant="secondary">{stats.totalAssignments}</Badge>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-              <span className="text-foreground">Total Students</span>
-              <Badge variant="secondary">{stats.totalStudents}</Badge>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          {/* Courses Section - Takes up 2 columns */}
+          <div className="xl:col-span-2 space-y-6">
+            <Card className="faculty-glass border-0 rounded-3xl overflow-hidden glow-effect">
+              <CardHeader className="border-b border-white/20 bg-white/10 subtle-wave">
+                <CardTitle className="flex items-center gap-3 text-white text-xl">
+                  <BookOpen className="w-6 h-6" />
+                  My Courses
+                  <Badge className="bg-white/20 text-white border-white/30">{courses.length}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto faculty-table-scroll">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-white/20 hover:bg-white/5">
+                        <TableHead className="text-white/90 font-semibold">Course</TableHead>
+                        <TableHead className="text-white/90 font-semibold">Faculty</TableHead>
+                        <TableHead className="text-white/90 font-semibold">Credits</TableHead>
+                        <TableHead className="text-white/90 font-semibold">Status</TableHead>
+                        <TableHead className="text-white/90 font-semibold">Created</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {courses.map((course, index) => (
+                        <TableRow
+                          key={course.id}
+                          className="border-white/20 hover:bg-white/10 transition-colors"
+                          style={{ animationDelay: `${index * 0.1}s` }}
+                        >
+                          <TableCell>
+                            <div>
+                              <div className="font-semibold text-white">{course.code}</div>
+                              <div className="text-white/80 text-sm">{course.name}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1">
+                              {course.all_faculty_names ? (
+                                course.all_faculty_names.split(', ').map((facultyName, index) => (
+                                  <Badge
+                                    key={index}
+                                    variant={index === 0 && course.is_primary ? "default" : "outline"}
+                                    className={`text-xs glow-effect ${index === 0 && course.is_primary
+                                      ? 'bg-white/20 text-white border-white/30'
+                                      : 'bg-transparent text-white/80 border-white/30'
+                                      }`}
+                                  >
+                                    {index === 0 && course.is_primary && '👑 '}
+                                    {facultyName}
+                                  </Badge>
+                                ))
+                              ) : (
+                                <Badge className="bg-transparent text-white/60 border-white/30 text-xs">
+                                  No Faculty Assigned
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className="bg-white/20 text-white border-white/30 glow-effect">
+                              {course.credits}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className="bg-green-500/20 text-green-300 border-green-500/30 breathing-glow">
+                              Active
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-white/80">
+                            {new Date(course.created_at).toLocaleDateString()}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  {courses.length === 0 && (
+                    <div className="text-center py-12">
+                      <div className="faculty-floating w-16 h-16 mx-auto mb-4 rounded-full bg-white/10 flex items-center justify-center breathing-glow">
+                        <BookOpen className="w-8 h-8 text-white/60" />
+                      </div>
+                      <p className="text-white/80 text-lg">No courses assigned yet</p>
+                      <p className="text-white/60 text-sm">Contact admin to get courses assigned to you</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* Announcements */}
-        <DashboardAnnouncements userRole="faculty" limit={4} />
+          {/* Sidebar Content */}
+          <div className="space-y-6">
+            {/* Quick Stats */}
+            <Card className="faculty-glass border-0 rounded-3xl overflow-hidden glow-effect">
+              <CardHeader className="border-b border-white/20 bg-white/10 subtle-wave">
+                <CardTitle className="flex items-center gap-3 text-white">
+                  <BarChart3 className="w-5 h-5" />
+                  Teaching Insights
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/90 font-medium">Grading Progress</span>
+                    <span className="text-white font-semibold">{Math.round(completionRate)}%</span>
+                  </div>
+                  <Progress value={completionRate} className="h-2 bg-white/20">
+                    <div
+                      className="h-full bg-gradient-to-r from-green-400 to-green-500 rounded-full transition-all duration-300 breathing-glow"
+                      style={{ width: `${completionRate}%` }}
+                    />
+                  </Progress>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 pt-4">
+                  <div className="bg-white/10 rounded-2xl p-4 text-center glow-effect subtle-wave">
+                    <div className="text-2xl font-bold text-white">{courses.length}</div>
+                    <div className="text-white/80 text-sm">Courses</div>
+                  </div>
+                  <div className="bg-white/10 rounded-2xl p-4 text-center glow-effect subtle-wave">
+                    <div className="text-2xl font-bold text-white">{totalCredits}</div>
+                    <div className="text-white/80 text-sm">Credits</div>
+                  </div>
+                  <div className="bg-white/10 rounded-2xl p-4 text-center glow-effect subtle-wave">
+                    <div className="text-2xl font-bold text-white">{stats.totalAssignments}</div>
+                    <div className="text-white/80 text-sm">Assignments</div>
+                  </div>
+                  <div className="bg-white/10 rounded-2xl p-4 text-center glow-effect subtle-wave">
+                    <div className="text-2xl font-bold text-white">{stats.totalStudents}</div>
+                    <div className="text-white/80 text-sm">Students</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Announcements */}
+            <div className="faculty-glass rounded-3xl overflow-hidden glow-effect subtle-wave">
+              <DashboardAnnouncements userRole="faculty" limit={4} />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

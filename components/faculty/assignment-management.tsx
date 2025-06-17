@@ -19,6 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { useToast } from "@/hooks/use-toast"
 import { AssignmentSubmissions } from "@/components/faculty/assignment-submissions"
 
 interface Assignment {
@@ -53,6 +54,7 @@ interface AssignmentFormData {
 
 export function AssignmentManagement() {
     console.log('AssignmentManagement component rendered with updated UI')
+    const { toast } = useToast()
     const [assignments, setAssignments] = React.useState<Assignment[]>([])
     const [courses, setCourses] = React.useState<Course[]>([])
     const [isLoading, setIsLoading] = React.useState(false)
@@ -442,7 +444,11 @@ export function AssignmentManagement() {
                                                                 // Check file size (10MB limit)
                                                                 const maxSize = 10 * 1024 * 1024 // 10MB
                                                                 if (file.size > maxSize) {
-                                                                    alert("File size too large. Maximum 10MB allowed.")
+                                                                    toast({
+                                                                        variant: "warning",
+                                                                        title: "File Too Large",
+                                                                        description: "File size too large. Maximum 10MB allowed.",
+                                                                    })
                                                                     e.target.value = "" // Clear the input
                                                                     return
                                                                 }
@@ -672,7 +678,11 @@ export function AssignmentManagement() {
                                                     // Check file size (10MB limit)
                                                     const maxSize = 10 * 1024 * 1024 // 10MB
                                                     if (file.size > maxSize) {
-                                                        alert("File size too large. Maximum 10MB allowed.")
+                                                        toast({
+                                                            variant: "warning",
+                                                            title: "File Too Large",
+                                                            description: "File size too large. Maximum 10MB allowed.",
+                                                        })
                                                         e.target.value = "" // Clear the input
                                                         return
                                                     }

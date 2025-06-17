@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
+import { useToast } from "@/hooks/use-toast"
 import { getAvatarColor } from "@/lib/utils"
 
 interface UserProfile {
@@ -45,6 +46,7 @@ interface UserProfileProps {
 }
 
 export function UserProfile({ user: propUser, setUser: externalSetUser }: UserProfileProps) {
+    const { toast } = useToast()
     const [user, setUser] = React.useState<UserProfile | null>(null)
     const [isEditing, setIsEditing] = React.useState(false)
     const [isLoading, setIsLoading] = React.useState(false)
@@ -170,12 +172,20 @@ export function UserProfile({ user: propUser, setUser: externalSetUser }: UserPr
 
         // Validation
         if (editableFields.newPassword && editableFields.newPassword !== editableFields.confirmPassword) {
-            alert("New passwords don't match!")
+            toast({
+                variant: "warning",
+                title: "Password Mismatch",
+                description: "New passwords don't match!",
+            })
             return
         }
 
         if (editableFields.newPassword && editableFields.newPassword.length < 6) {
-            alert("New password must be at least 6 characters long!")
+            toast({
+                variant: "warning",
+                title: "Password Too Short",
+                description: "New password must be at least 6 characters long!",
+            })
             return
         }
 
@@ -223,13 +233,25 @@ export function UserProfile({ user: propUser, setUser: externalSetUser }: UserPr
                     confirmPassword: ""
                 })
 
-                alert("Profile updated successfully!")
+                toast({
+                    variant: "success",
+                    title: "Profile Updated",
+                    description: "Profile updated successfully!",
+                })
             } else {
-                alert(data.message || "Failed to update profile")
+                toast({
+                    variant: "warning",
+                    title: "Update Failed",
+                    description: data.message || "Failed to update profile",
+                })
             }
         } catch (error) {
             console.error('Error updating profile:', error)
-            alert("Failed to update profile. Please try again.")
+            toast({
+                variant: "warning",
+                title: "Update Failed",
+                description: "Failed to update profile. Please try again.",
+            })
         } finally {
             setIsLoading(false)
         }

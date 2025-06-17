@@ -1,13 +1,16 @@
 'use client'
 
 import * as React from 'react'
-import {
-  ThemeProvider as NextThemesProvider,
-  type ThemeProviderProps,
-} from 'next-themes'
 
-export const ThemeProvider = React.memo(function ThemeProvider({ children, ...props }: ThemeProviderProps) {
-  return <NextThemesProvider {...props}>{children}</NextThemesProvider>
+// Simple dark-mode only provider
+export const ThemeProvider = React.memo(function ThemeProvider({ children }: { children: React.ReactNode }) {
+  React.useEffect(() => {
+    // Force dark mode
+    document.documentElement.classList.add('dark')
+    document.documentElement.setAttribute('data-theme', 'dark')
+  }, [])
+
+  return <>{children}</>
 })
 
 ThemeProvider.displayName = 'ThemeProvider'

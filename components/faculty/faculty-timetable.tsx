@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { checkTimetableAttendance } from '@/lib/timetable-actions'
 import { Check, Clock, Users, MapPin, BookOpen, Calendar } from 'lucide-react'
-import { toast } from '@/hooks/use-toast'
+import { useToast } from '@/hooks/use-toast'
 
 interface TimetableEntry {
     id: number
@@ -94,6 +94,7 @@ const facultyColors = [
 ]
 
 export function FacultyTimetable({ timetableData, userRole, currentUser }: FacultyTimetableProps) {
+    const { toast } = useToast()
     const [attendanceStatus, setAttendanceStatus] = useState<{ [key: number]: boolean }>({})
 
     // Check attendance status for all timetable entries on component mount
@@ -128,7 +129,8 @@ export function FacultyTimetable({ timetableData, userRole, currentUser }: Facul
             toast({
                 title: "Access Denied",
                 description: "You can only mark attendance for your own classes.",
-                variant: "destructive"
+                variant: "warning" as any,
+                duration: 5000,
             })
             return
         }

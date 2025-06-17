@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useToast } from "@/hooks/use-toast"
 
 interface Assignment {
     id: number
@@ -28,6 +29,7 @@ interface Assignment {
 }
 
 export function AssignmentsSubmission() {
+    const { toast } = useToast()
     const [assignments, setAssignments] = React.useState<Assignment[]>([])
     const [selectedFile, setSelectedFile] = React.useState<File | null>(null)
     const [uploadingId, setUploadingId] = React.useState<number | null>(null)
@@ -63,13 +65,21 @@ export function AssignmentsSubmission() {
 
     const handleFileUpload = async (assignmentId: number) => {
         if (!selectedFile) {
-            alert("Please select a file to upload")
+            toast({
+                variant: "warning",
+                title: "No File Selected",
+                description: "Please select a file to upload",
+            })
             return
         }
 
         const maxSize = 10 * 1024 * 1024 // 10MB
         if (selectedFile.size > maxSize) {
-            alert("File size too large. Maximum 10MB allowed.")
+            toast({
+                variant: "warning",
+                title: "File Too Large",
+                description: "File size too large. Maximum 10MB allowed.",
+            })
             return
         }
 
@@ -100,14 +110,26 @@ export function AssignmentsSubmission() {
                         : assignment
                 ))
 
-                alert("Assignment submitted successfully!")
+                toast({
+                    variant: "success",
+                    title: "Assignment Submitted",
+                    description: "Assignment submitted successfully!",
+                })
                 setSelectedFile(null)
             } else {
-                alert(data.message || "Failed to submit assignment")
+                toast({
+                    variant: "warning",
+                    title: "Submission Failed",
+                    description: data.message || "Failed to submit assignment",
+                })
             }
         } catch (error) {
             console.error('Upload error:', error)
-            alert("Failed to upload file. Please try again.")
+            toast({
+                variant: "warning",
+                title: "Upload Failed",
+                description: "Failed to upload file. Please try again.",
+            })
         } finally {
             setUploadingId(null)
         }
@@ -141,11 +163,19 @@ export function AssignmentsSubmission() {
                 document.body.removeChild(a)
             } else {
                 const errorData = await response.json()
-                alert(errorData.message || "Failed to download file")
+                toast({
+                    variant: "warning",
+                    title: "Download Failed",
+                    description: errorData.message || "Failed to download file",
+                })
             }
         } catch (error) {
             console.error('Download error:', error)
-            alert("Failed to download file. Please try again.")
+            toast({
+                variant: "warning",
+                title: "Download Failed",
+                description: "Failed to download file. Please try again.",
+            })
         }
     }
 
@@ -154,7 +184,11 @@ export function AssignmentsSubmission() {
             // Find the assignment to get the submitted file URL
             const assignment = assignments.find(a => a.id === assignmentId)
             if (!assignment?.submittedFile) {
-                alert("No submitted file found")
+                toast({
+                    variant: "warning",
+                    title: "File Not Found",
+                    description: "No submitted file found",
+                })
                 return
             }
 
@@ -188,11 +222,19 @@ export function AssignmentsSubmission() {
                 document.body.removeChild(a)
             } else {
                 const errorData = await response.json()
-                alert(errorData.message || "Failed to download submitted file")
+                toast({
+                    variant: "warning",
+                    title: "Download Failed",
+                    description: errorData.message || "Failed to download submitted file",
+                })
             }
         } catch (error) {
             console.error('Download submitted file error:', error)
-            alert("Failed to download submitted file. Please try again.")
+            toast({
+                variant: "warning",
+                title: "Download Failed",
+                description: "Failed to download submitted file. Please try again.",
+            })
         }
     }
 

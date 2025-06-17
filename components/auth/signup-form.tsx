@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ThemeToggle } from "@/components/ui/theme-toggle"
+
 import { signUp } from "@/lib/auth-actions"
 
 export function SignUpForm() {
@@ -56,7 +56,7 @@ export function SignUpForm() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
       {/* Theme Toggle */}
       <div className="absolute top-4 right-4">
-        <ThemeToggle />
+
       </div>
 
       <Card className="w-full max-w-md shadow-xl border border-border bg-card/80 backdrop-blur-sm">

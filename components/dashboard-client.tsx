@@ -39,10 +39,11 @@ import { AssignmentsSubmission } from "@/components/student/assignments-submissi
 import { GradesDashboard } from "@/components/student/grades-dashboard"
 import { CourseCatalog } from "@/components/courses/course-catalog"
 import { UserProfile } from "@/components/profile/user-profile"
-import { DashboardSummaryCards } from "@/components/dashboard-summary-cards"
-import { ThemeToggle } from "@/components/ui/theme-toggle"
+
 import { signOut } from "@/lib/auth-actions"
 import { getAvatarColor } from "@/lib/utils"
+import { useAnnouncements } from "@/hooks/use-announcements"
+import { useToast } from "@/hooks/use-toast"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -128,6 +129,13 @@ export function DashboardClient({ user: initialUser }: DashboardClientProps) {
   const [attendanceData, setAttendanceData] = React.useState<any>(null)
   const [loading, setLoading] = React.useState(false)
   const navigationItems = getNavigationItems(user.role)
+  const { toast } = useToast()
+
+  // Use announcements hook for notifications
+  const { unreadCount, refresh: refreshAnnouncements } = useAnnouncements({
+    userRole: user.role,
+    pollingInterval: 30000 // Check every 30 seconds
+  })
 
   // Handle URL tab parameter on initial load only
   React.useEffect(() => {
@@ -302,8 +310,7 @@ export function DashboardClient({ user: initialUser }: DashboardClientProps) {
     switch (currentPage) {
       case "dashboard":
         return (
-          <div className="p-6 space-y-6">
-            <DashboardSummaryCards userRole={user.role as 'student' | 'faculty' | 'admin'} />
+          <div className={user.role === "faculty" ? "" : user.role === "student" ? "" : "p-6 space-y-6"}>
             {user.role === "student" && <StudentDashboard />}
             {user.role === "faculty" && <FacultyDashboard user={user} />}
             {user.role === "admin" && <AdminDashboard />}
@@ -312,7 +319,7 @@ export function DashboardClient({ user: initialUser }: DashboardClientProps) {
 
       case "my-assignments":
         return (
-          <div className="p-6">
+          <div className="p-6 pt-4">
             <AssignmentsSubmission />
           </div>
         )
@@ -468,25 +475,61 @@ export function DashboardClient({ user: initialUser }: DashboardClientProps) {
     <div className="min-h-screen">
       <SidebarProvider>
         <div className="flex min-h-screen w-full">
-          <Sidebar className="border-r">
-            <SidebarHeader className="border-b p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white">
-                  <GraduationCap className="h-6 w-6" />
+          <Sidebar className="faculty-glass backdrop-blur-xl border-0 sidebar-override" style={{
+            background: user.role === 'faculty'
+              ? 'linear-gradient(180deg, hsl(var(--faculty-primary)) 0%, hsl(var(--faculty-secondary)) 100%)'
+              : 'hsl(var(--sidebar-background))',
+            borderRight: 'none',
+            border: 'none'
+          }}>
+            <SidebarHeader className="border-b border-white/20 p-6">
+              <div className="flex items-center gap-4">
+                <div className="faculty-floating flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm text-white shadow-lg">
+                  <GraduationCap className="h-7 w-7" />
                 </div>
                 <div className="flex flex-col">
-                  <h1 className="text-lg font-semibold">Presidency University</h1>
-                  <p className="text-sm text-muted-foreground">Learning Portal</p>
+                  <h1 className="text-xl font-bold text-white">Presidency University</h1>
+                  <p className="text-sm text-white/80 font-medium">Learning Portal</p>
                 </div>
               </div>
             </SidebarHeader>
 
-            <SidebarContent>
+            <SidebarContent className={`px-4 py-6 ${user.role === 'faculty' ? 'sidebar-faculty-scroll' : 'sidebar-default-scroll'}`} style={{
+              background: user.role === 'faculty'
+                ? 'linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.05) 100%)'
+                : 'transparent'
+            }}>
               <SidebarGroup>
-                <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+                <div className={`
+                  px-4 py-3 mb-6 rounded-2xl border backdrop-blur-sm
+                  ${user.role === 'faculty'
+                    ? 'bg-white/10 border-white/20 text-white'
+                    : 'bg-muted/50 border-border text-foreground'
+                  }
+                `}>
+                  <div className="flex items-center gap-3">
+                    <div className={`
+                      w-8 h-8 rounded-xl flex items-center justify-center
+                      ${user.role === 'faculty'
+                        ? 'bg-white/20 text-white'
+                        : 'bg-primary/10 text-primary'
+                      }
+                    `}>
+                      <GraduationCap className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className={`font-semibold text-sm ${user.role === 'faculty' ? 'text-white' : 'text-foreground'}`}>
+                        Navigation
+                      </div>
+                      <div className={`text-xs ${user.role === 'faculty' ? 'text-white/70' : 'text-muted-foreground'}`}>
+                        Quick access menu
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <SidebarGroupContent>
-                  <SidebarMenu>
-                    {navigationItems.map((item) => (
+                  <SidebarMenu className="space-y-1">
+                    {navigationItems.map((item, index) => (
                       <SidebarMenuItem key={item.key}>
                         <SidebarMenuButton
                           onClick={() => {
@@ -495,9 +538,43 @@ export function DashboardClient({ user: initialUser }: DashboardClientProps) {
                             setCurrentPage(item.key)
                           }}
                           isActive={currentPage === item.key}
+                          className={`
+                            group relative rounded-2xl px-4 py-3 mb-1 transition-all duration-300 sidebar-item-hover border
+                            ${user.role === 'faculty' ? 'sidebar-faculty-item' : ''}
+                            ${currentPage === item.key
+                              ? user.role === 'faculty'
+                                ? 'bg-white/25 text-white shadow-lg backdrop-blur-sm border-white/30'
+                                : 'bg-primary text-primary-foreground border-primary/20'
+                              : user.role === 'faculty'
+                                ? 'text-white/80 hover:bg-white/10 hover:text-white border-white/10 hover:border-white/20'
+                                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground border-transparent hover:border-border'
+                            }
+                          `}
+                          style={{
+                            animationDelay: `${index * 0.05}s`,
+                            transform: currentPage === item.key ? 'translateX(2px)' : 'none'
+                          }}
                         >
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.title}</span>
+                          <div className={`
+                            w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-300
+                            ${currentPage === item.key
+                              ? user.role === 'faculty'
+                                ? 'bg-white/20 text-white'
+                                : 'bg-primary-foreground/20 text-primary-foreground'
+                              : user.role === 'faculty'
+                                ? 'bg-white/10 text-white/80 group-hover:bg-white/15 group-hover:text-white'
+                                : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'
+                            }
+                          `}>
+                            <item.icon className="h-4 w-4 transition-transform group-hover:scale-110 sidebar-icon-hover" />
+                          </div>
+                          <span className="font-medium">{item.title}</span>
+                          {currentPage === item.key && (
+                            <div className={`
+                              absolute right-3 w-2 h-2 rounded-full
+                              ${user.role === 'faculty' ? 'bg-white/80 faculty-pulse' : 'bg-primary faculty-pulse'}
+                            `}></div>
+                          )}
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     ))}
@@ -506,61 +583,126 @@ export function DashboardClient({ user: initialUser }: DashboardClientProps) {
               </SidebarGroup>
             </SidebarContent>
 
-            {/* Mini user profile at bottom */}
-            <div className="mt-auto p-4 border-t">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10">
-                  {user.avatar ? <AvatarImage src={user.avatar} /> : null}
-                  <AvatarFallback
-                    className="text-sm text-white flex items-center justify-center"
-                    style={{ backgroundColor: getAvatarColor(user.fullName) }}
-                  >
-                    {user.fullName
-                      .split(" ")
-                      .slice(0, 2)
-                      .map((n) => n[0])
-                      .join("")}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col">
-                  <span className="font-medium text-foreground leading-none line-clamp-1">
-                    {user.fullName}
-                  </span>
-                  <span className="text-xs text-muted-foreground line-clamp-1">
-                    {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                  </span>
+            {/* Enhanced user profile at bottom */}
+            <div className="mt-auto p-6 border-t border-white/20">
+              <div className={`
+                rounded-2xl p-4 transition-all duration-300 sidebar-profile-hover
+                ${user.role === 'faculty'
+                  ? 'bg-white/10 backdrop-blur-sm'
+                  : 'bg-muted/50'
+                }
+              `}>
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-12 w-12 border-2 border-white/30">
+                    {user.avatar ? <AvatarImage src={user.avatar} /> : null}
+                    <AvatarFallback
+                      className="text-sm text-white flex items-center justify-center font-semibold"
+                      style={{
+                        backgroundColor: user.role === 'faculty'
+                          ? 'rgba(255,255,255,0.2)'
+                          : getAvatarColor(user.fullName)
+                      }}
+                    >
+                      {user.fullName
+                        .split(" ")
+                        .slice(0, 2)
+                        .map((n) => n[0])
+                        .join("")}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col">
+                    <span className={`font-semibold leading-none line-clamp-1 ${user.role === 'faculty' ? 'text-white' : 'text-foreground'
+                      }`}>
+                      {user.fullName}
+                    </span>
+                    <span className={`text-xs line-clamp-1 mt-1 ${user.role === 'faculty' ? 'text-white/80' : 'text-muted-foreground'
+                      }`}>
+                      {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                      {user.department && ` • ${user.department}`}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           </Sidebar>
 
           <SidebarInset className="flex-1">
-            {/* Header */}
-            <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger />
+            {/* Enhanced Header */}
+            <header className="sticky top-0 z-50 flex h-20 items-center justify-between border-b backdrop-blur-xl px-6 bg-background/95 border-border supports-[backdrop-filter]:bg-background/60">
+              <div className="flex items-center gap-6">
+                <SidebarTrigger className="transition-all duration-300 hover:scale-110 sidebar-icon-hover" />
                 <div className="hidden md:block">
-                  <h2 className="text-xl font-semibold capitalize text-foreground">{currentPage.replace("-", " ")}</h2>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
+                      {currentPage === 'dashboard' && <Home className="h-4 w-4 text-white" />}
+                      {currentPage === 'my-timetable' && <Calendar className="h-4 w-4 text-white" />}
+                      {currentPage === 'assignment-management' && <ClipboardList className="h-4 w-4 text-white" />}
+                      {currentPage === 'grading' && <GraduationCap className="h-4 w-4 text-white" />}
+                      {currentPage === 'mark-attendance' && <Calendar className="h-4 w-4 text-white" />}
+                      {currentPage === 'attendance-analytics' && <TrendingUp className="h-4 w-4 text-white" />}
+                      {!['dashboard', 'my-timetable', 'assignment-management', 'grading', 'mark-attendance', 'attendance-analytics'].includes(currentPage) && <FileText className="h-4 w-4 text-white" />}
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold capitalize text-foreground">
+                        {currentPage.replace("-", " ")}
+                      </h2>
+                      <p className="text-sm text-muted-foreground">
+                        {user.role === 'faculty' && currentPage === 'dashboard' && 'Your teaching overview'}
+                        {user.role === 'faculty' && currentPage === 'my-timetable' && 'Your schedule and classes'}
+                        {user.role === 'faculty' && currentPage === 'assignment-management' && 'Manage course assignments'}
+                        {user.role === 'faculty' && currentPage === 'grading' && 'Review and grade submissions'}
+                        {user.role === 'faculty' && currentPage === 'mark-attendance' && 'Take student attendance'}
+                        {user.role === 'faculty' && currentPage === 'attendance-analytics' && 'View attendance insights'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
-                <ThemeToggle />
+              <div className="flex items-center gap-3">
 
-                <Button variant="ghost" size="icon">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative transition-all duration-300 hover:scale-110 sidebar-icon-hover"
+                  onClick={() => {
+                    setCurrentPage("announcements")
+                    toast({
+                      title: "Announcements",
+                      description: "Checking for new announcements...",
+                      duration: 2000,
+                    })
+                    refreshAnnouncements()
+                  }}
+                  title={`Notifications${unreadCount > 0 ? ` (${unreadCount} new)` : ''}`}
+                >
                   <Bell className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center">
+                      <span className="text-xs text-white font-bold">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    </div>
+                  )}
                 </Button>
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="flex items-center gap-2">
-                      <Avatar className="h-8 w-8">
+                    <Button
+                      variant="ghost"
+                      className="flex items-center gap-3 transition-all duration-300 hover:scale-105"
+                    >
+                      <Avatar className="h-10 w-10 border-2 border-white/30">
                         {user.avatar ? (
                           <AvatarImage src={user.avatar} />
                         ) : null}
                         <AvatarFallback
-                          className="text-xs text-white flex items-center justify-center"
-                          style={{ backgroundColor: getAvatarColor(user.fullName) }}
+                          className="text-sm text-white flex items-center justify-center font-semibold"
+                          style={{
+                            backgroundColor: user.role === 'faculty'
+                              ? 'hsl(var(--faculty-primary))'
+                              : getAvatarColor(user.fullName)
+                          }}
                         >
                           {user.fullName
                             .split(" ")
@@ -569,24 +711,31 @@ export function DashboardClient({ user: initialUser }: DashboardClientProps) {
                             .join("")}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="hidden md:inline text-foreground">{user.fullName}</span>
+                      <div className="hidden lg:block text-left">
+                        <div className="font-semibold text-foreground">
+                          {user.fullName}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                        </div>
+                      </div>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuItem onClick={() => {
                       window.history.pushState({}, '', '/dashboard')
                       setCurrentPage("profile")
                     }}>
                       <User className="mr-2 h-4 w-4" />
-                      Profile
+                      Profile Settings
                     </DropdownMenuItem>
                     <DropdownMenuItem>
                       <Settings className="mr-2 h-4 w-4" />
-                      Settings
+                      Preferences
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleLogout}>
+                    <DropdownMenuItem onClick={handleLogout} className="text-red-600">
                       <LogOut className="mr-2 h-4 w-4" />
-                      Logout
+                      Sign Out
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -594,7 +743,7 @@ export function DashboardClient({ user: initialUser }: DashboardClientProps) {
             </header>
 
             {/* Main Content */}
-            <main className="flex-1">{renderContent()}</main>
+            <main className="flex-1 relative z-0">{renderContent()}</main>
           </SidebarInset>
         </div>
       </SidebarProvider>
