@@ -42,6 +42,7 @@ import { UserProfile } from "@/components/profile/user-profile"
 import { DashboardSummaryCards } from "@/components/dashboard-summary-cards"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { signOut } from "@/lib/auth-actions"
+import { getAvatarColor } from "@/lib/utils"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -504,6 +505,33 @@ export function DashboardClient({ user: initialUser }: DashboardClientProps) {
                 </SidebarGroupContent>
               </SidebarGroup>
             </SidebarContent>
+
+            {/* Mini user profile at bottom */}
+            <div className="mt-auto p-4 border-t">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-10 w-10">
+                  {user.avatar ? <AvatarImage src={user.avatar} /> : null}
+                  <AvatarFallback
+                    className="text-sm text-white flex items-center justify-center"
+                    style={{ backgroundColor: getAvatarColor(user.fullName) }}
+                  >
+                    {user.fullName
+                      .split(" ")
+                      .slice(0, 2)
+                      .map((n) => n[0])
+                      .join("")}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col">
+                  <span className="font-medium text-foreground leading-none line-clamp-1">
+                    {user.fullName}
+                  </span>
+                  <span className="text-xs text-muted-foreground line-clamp-1">
+                    {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                  </span>
+                </div>
+              </div>
+            </div>
           </Sidebar>
 
           <SidebarInset className="flex-1">
@@ -527,10 +555,16 @@ export function DashboardClient({ user: initialUser }: DashboardClientProps) {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="flex items-center gap-2">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.avatar || "/placeholder.svg?height=32&width=32"} />
-                        <AvatarFallback className="bg-primary/10 text-foreground">
+                        {user.avatar ? (
+                          <AvatarImage src={user.avatar} />
+                        ) : null}
+                        <AvatarFallback
+                          className="text-xs text-white flex items-center justify-center"
+                          style={{ backgroundColor: getAvatarColor(user.fullName) }}
+                        >
                           {user.fullName
                             .split(" ")
+                            .slice(0, 2)
                             .map((n) => n[0])
                             .join("")}
                         </AvatarFallback>

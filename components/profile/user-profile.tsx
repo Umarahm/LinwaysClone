@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
+import { getAvatarColor } from "@/lib/utils"
 
 interface UserProfile {
     id: number
@@ -43,7 +44,7 @@ interface UserProfileProps {
     setUser?: (user: any) => void
 }
 
-export function UserProfile({ user: propUser }: UserProfileProps) {
+export function UserProfile({ user: propUser, setUser: externalSetUser }: UserProfileProps) {
     const [user, setUser] = React.useState<UserProfile | null>(null)
     const [isEditing, setIsEditing] = React.useState(false)
     const [isLoading, setIsLoading] = React.useState(false)
@@ -75,7 +76,7 @@ export function UserProfile({ user: propUser }: UserProfileProps) {
                         role: data.user.role,
                         department: data.user.department,
                         phoneNumber: data.user.phoneNumber || "",
-                        avatar: data.user.avatar || "/placeholder.svg?height=200&width=200",
+                        avatar: data.user.avatar || "",
                         joinedAt: data.user.createdAt || new Date().toISOString(),
                         lastActive: data.user.lastActive || new Date().toISOString()
                     }
@@ -97,7 +98,7 @@ export function UserProfile({ user: propUser }: UserProfileProps) {
                         role: propUser.role,
                         department: propUser.department,
                         phoneNumber: "",
-                        avatar: "/placeholder.svg?height=200&width=200",
+                        avatar: "",
                         joinedAt: new Date().toISOString(),
                         lastActive: new Date().toISOString()
                     }
@@ -123,7 +124,7 @@ export function UserProfile({ user: propUser }: UserProfileProps) {
                         role: propUser.role,
                         department: propUser.department,
                         phoneNumber: "",
-                        avatar: "/placeholder.svg?height=200&width=200",
+                        avatar: "",
                         joinedAt: new Date().toISOString(),
                         lastActive: new Date().toISOString()
                     }
@@ -211,7 +212,7 @@ export function UserProfile({ user: propUser }: UserProfileProps) {
                 }
 
                 setUser(updatedUser)
-                if (typeof setUser === 'function') setUser(updatedUser)
+                if (typeof externalSetUser === 'function') externalSetUser(updatedUser)
                 setIsEditing(false)
                 setAvatarFile(null)
                 setAvatarPreview("")
@@ -327,9 +328,18 @@ export function UserProfile({ user: propUser }: UserProfileProps) {
                     <CardContent className="flex flex-col items-center space-y-4">
                         <div className="relative">
                             <Avatar className="h-32 w-32">
-                                <AvatarImage src={avatarPreview || user.avatar} alt={user.fullName} />
-                                <AvatarFallback className="text-2xl">
-                                    {user.fullName.split(' ').map(n => n[0]).join('')}
+                                {(avatarPreview || user.avatar) ? (
+                                    <AvatarImage src={avatarPreview || user.avatar} alt={user.fullName} />
+                                ) : null}
+                                <AvatarFallback
+                                    className="text-2xl text-white flex items-center justify-center"
+                                    style={{ backgroundColor: getAvatarColor(user.fullName) }}
+                                >
+                                    {user.fullName
+                                        .split(' ')
+                                        .slice(0, 2)
+                                        .map((n) => n[0])
+                                        .join('')}
                                 </AvatarFallback>
                             </Avatar>
 
