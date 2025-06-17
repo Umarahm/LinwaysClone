@@ -4,7 +4,8 @@ import React, { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { getTimetableByUser } from '@/lib/timetable-actions'
-import { Clock, MapPin, BookOpen, GraduationCap, User } from 'lucide-react'
+import { getStudentTimetableAttendance } from '@/lib/attendance-actions'
+import { Clock, MapPin, BookOpen, GraduationCap, User, Check, X } from 'lucide-react'
 
 interface TimetableEntry {
     id: number
@@ -62,6 +63,7 @@ const courseColors = [
 export function StudentMiniTimetable() {
     const [todayClasses, setTodayClasses] = useState<TimetableEntry[]>([])
     const [loading, setLoading] = useState(true)
+    const [attendanceStatus, setAttendanceStatus] = useState<Record<number, 'present' | 'absent'>>({})
 
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long' })
     const currentTime = new Date().getHours() * 100 + new Date().getMinutes()
@@ -73,6 +75,11 @@ export function StudentMiniTimetable() {
                 const allClasses = await getTimetableByUser() as TimetableEntry[]
                 const todaySchedule = allClasses.filter(entry => entry.day === today)
                 setTodayClasses(todaySchedule)
+
+                // Fetch today's attendance status
+                const todayDate = new Date().toISOString().split('T')[0]
+                const attendanceData = await getStudentTimetableAttendance(undefined, todayDate)
+                setAttendanceStatus(attendanceData)
             } catch (error) {
                 console.error('Error fetching today\'s classes:', error)
             } finally {
@@ -109,6 +116,38 @@ export function StudentMiniTimetable() {
     const isPast = (endTime: string) => {
         const end = parseInt(endTime.replace(':', ''))
         return currentTime > end
+    }
+
+    const getAttendanceIndicator = (timetableId: number) => {
+        const status = attendanceStatus[timetableId]
+        if (!status) return null
+
+        if (status === 'present') {
+            return (
+                <div className="absolute top-1 left-1 bg-green-500 text-white rounded-full p-1 z-10">
+                    <Check className="w-3 h-3" />
+                </div>
+            )
+        } else if (status === 'absent') {
+            return (
+                <div className="absolute top-1 left-1 bg-red-500 text-white rounded-full p-1 z-10">
+                    <X className="w-3 h-3" />
+                </div>
+            )
+        }
+        return null
+    }
+
+    const getAttendanceStatusClass = (timetableId: number) => {
+        const status = attendanceStatus[timetableId]
+        if (!status) return ''
+
+        if (status === 'present') {
+            return 'ring-2 ring-green-400 bg-green-50 dark:bg-green-950'
+        } else if (status === 'absent') {
+            return 'ring-2 ring-red-400 bg-red-50 dark:bg-red-950'
+        }
+        return ''
     }
 
     if (loading) {
@@ -171,6 +210,7 @@ export function StudentMiniTimetable() {
                             const isCurrent = isCurrentClass(entry.start_time, entry.end_time)
                             const upcoming = isUpcoming(entry.start_time)
                             const past = isPast(entry.end_time)
+                            const attendanceClass = getAttendanceStatusClass(entry.id)
 
                             return (
                                 <div
@@ -181,8 +221,10 @@ export function StudentMiniTimetable() {
                     hover:shadow-lg hover:scale-[1.02]
                     ${isCurrent ? 'ring-2 ring-red-400 dark:ring-red-600 shadow-md' : ''}
                     ${past ? 'opacity-60' : ''}
+                    ${attendanceClass}
                   `}
                                 >
+                                    {getAttendanceIndicator(entry.id)}
                                     {/* Status indicators */}
                                     <div className="absolute top-2 right-2 flex gap-1">
                                         {isCurrent && (

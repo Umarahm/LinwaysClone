@@ -6,6 +6,7 @@ import {
   BookOpen,
   Calendar,
   ClipboardList,
+  FileText,
   GraduationCap,
   Home,
   LogOut,
@@ -23,7 +24,7 @@ import { AttendanceAnalytics } from "@/components/attendance/attendance-analytic
 import { getStudentAttendance } from "@/lib/attendance-actions"
 import { GradesOverview } from "@/components/student/grades-overview"
 import { AssignmentsManagement } from "@/components/faculty/assignments-management"
-import { AttendanceMarking } from "@/components/faculty/attendance-marking"
+import { CourseSelectionForAttendance } from "@/components/faculty/course-selection-for-attendance"
 import { FacultyTimetableClient } from "@/components/faculty/faculty-timetable-client"
 import { StudentTimetableClient } from "@/components/student/student-timetable-client"
 import { AnnouncementsPage } from "@/components/announcements-page"
@@ -59,6 +60,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { useState } from "react"
 
 interface DashboardClientProps {
   user: {
@@ -67,6 +69,7 @@ interface DashboardClientProps {
     fullName: string
     role: string
     department: string
+    avatar?: string
   }
 }
 
@@ -118,11 +121,24 @@ const getNavigationItems = (role: string) => {
   return baseItems
 }
 
-export function DashboardClient({ user }: DashboardClientProps) {
+export function DashboardClient({ user: initialUser }: DashboardClientProps) {
+  const [user, setUser] = useState(initialUser)
   const [currentPage, setCurrentPage] = React.useState("dashboard")
   const [attendanceData, setAttendanceData] = React.useState<any>(null)
   const [loading, setLoading] = React.useState(false)
   const navigationItems = getNavigationItems(user.role)
+
+  // Handle URL tab parameter on initial load only
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const tabParam = urlParams.get('tab')
+    const navItems = getNavigationItems(user.role)
+    if (tabParam && navItems.some(item => item.key === tabParam)) {
+      setCurrentPage(tabParam)
+      // Clear the URL parameter after setting the page to prevent future interference
+      window.history.replaceState({}, '', '/dashboard')
+    }
+  }, [user.role]) // Only depend on user.role since that determines available navigation items
 
   // Fetch attendance data when needed
   const fetchAttendanceData = React.useCallback(async () => {
@@ -156,17 +172,60 @@ export function DashboardClient({ user }: DashboardClientProps) {
       {
         id: 1,
         title: "Binary Search Tree Implementation",
-        course: "CS201 - Data Structures",
-        dueDate: "2024-02-15",
+        courseCode: "CS201",
+        courseName: "Data Structures & Algorithms",
+        description: "Implement a complete BST with insertion, deletion, and traversal operations. Focus on maintaining tree balance and efficient operations.",
+        dueDate: "2024-02-15T23:59:00",
         status: "not_submitted" as const,
+        maxMarks: 100,
+        fileUrl: "https://example.com/bst-assignment.pdf",
       },
       {
         id: 2,
         title: "Database Design Project",
-        course: "CS301 - Database Systems",
-        dueDate: "2024-02-20",
+        courseCode: "CS301",
+        courseName: "Database Management Systems",
+        description: "Design a complete database schema for an e-commerce application with proper normalization and relationships.",
+        dueDate: "2024-02-20T23:59:00",
         status: "submitted" as const,
         grade: 85,
+        maxMarks: 150,
+        submittedAt: "2024-02-18T14:30:00",
+      },
+      {
+        id: 3,
+        title: "React Portfolio Website",
+        courseCode: "IT401",
+        courseName: "Web Development",
+        description: "Create a personal portfolio website using React, TypeScript, and modern styling frameworks. Include responsive design and accessibility features.",
+        dueDate: "2025-01-05T23:59:00",
+        status: "not_submitted" as const,
+        maxMarks: 200,
+        fileUrl: "https://example.com/portfolio-requirements.pdf",
+      },
+      {
+        id: 4,
+        title: "Machine Learning Classification",
+        courseCode: "CS401",
+        courseName: "Machine Learning",
+        description: "Implement and compare different classification algorithms on a given dataset. Include data preprocessing, model training, and evaluation.",
+        dueDate: "2024-12-18T23:59:00",
+        status: "late_submitted" as const,
+        maxMarks: 120,
+        grade: 92,
+        submittedAt: "2024-12-19T10:15:00",
+      },
+      {
+        id: 5,
+        title: "Network Security Analysis",
+        courseCode: "CS501",
+        courseName: "Cybersecurity",
+        description: "Conduct a comprehensive security analysis of a given network infrastructure and provide recommendations for improvement.",
+        dueDate: "2024-01-30T23:59:00",
+        status: "submitted" as const,
+        maxMarks: 80,
+        grade: 78,
+        submittedAt: "2024-01-28T16:45:00",
       },
     ]
 
@@ -274,7 +333,7 @@ export function DashboardClient({ user }: DashboardClientProps) {
       case "profile":
         return (
           <div className="p-6">
-            <UserProfile />
+            <UserProfile user={user} setUser={setUser} />
           </div>
         )
 
@@ -282,7 +341,11 @@ export function DashboardClient({ user }: DashboardClientProps) {
         if (user.role === "student") {
           return <AssignmentsPage assignments={mockAssignments} />
         } else {
-          return <AttendanceHistory />
+          return (
+            <div className="p-6">
+              <AssignmentManagement />
+            </div>
+          )
         }
 
       case "attendance":
@@ -348,7 +411,7 @@ export function DashboardClient({ user }: DashboardClientProps) {
       case "mark-attendance":
         return (
           <div className="p-6">
-            <AttendanceMarking />
+            <CourseSelectionForAttendance />
           </div>
         )
 
@@ -424,7 +487,14 @@ export function DashboardClient({ user }: DashboardClientProps) {
                   <SidebarMenu>
                     {navigationItems.map((item) => (
                       <SidebarMenuItem key={item.key}>
-                        <SidebarMenuButton onClick={() => setCurrentPage(item.key)} isActive={currentPage === item.key}>
+                        <SidebarMenuButton
+                          onClick={() => {
+                            // Clear URL parameters and update current page
+                            window.history.pushState({}, '', '/dashboard')
+                            setCurrentPage(item.key)
+                          }}
+                          isActive={currentPage === item.key}
+                        >
                           <item.icon className="h-4 w-4" />
                           <span>{item.title}</span>
                         </SidebarMenuButton>
@@ -457,7 +527,7 @@ export function DashboardClient({ user }: DashboardClientProps) {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="flex items-center gap-2">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src="/placeholder.svg?height=32&width=32" />
+                        <AvatarImage src={user.avatar || "/placeholder.svg?height=32&width=32"} />
                         <AvatarFallback className="bg-primary/10 text-foreground">
                           {user.fullName
                             .split(" ")
@@ -469,7 +539,10 @@ export function DashboardClient({ user }: DashboardClientProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setCurrentPage("profile")}>
+                    <DropdownMenuItem onClick={() => {
+                      window.history.pushState({}, '', '/dashboard')
+                      setCurrentPage("profile")
+                    }}>
                       <User className="mr-2 h-4 w-4" />
                       Profile
                     </DropdownMenuItem>

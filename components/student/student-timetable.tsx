@@ -4,7 +4,8 @@ import React, { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { getTimetableByUser } from '@/lib/timetable-actions'
-import { Calendar, Clock, MapPin, BookOpen, User, GraduationCap } from 'lucide-react'
+import { getStudentTimetableAttendance } from '@/lib/attendance-actions'
+import { Calendar, Clock, MapPin, BookOpen, User, GraduationCap, Check, X } from 'lucide-react'
 
 interface TimetableEntry {
     id: number
@@ -81,6 +82,7 @@ export function StudentTimetable() {
     const [timetableData, setTimetableData] = useState<TimetableEntry[]>([])
     const [loading, setLoading] = useState(true)
     const [currentTime, setCurrentTime] = useState(new Date())
+    const [attendanceStatus, setAttendanceStatus] = useState<Record<number, 'present' | 'absent'>>({})
 
     useEffect(() => {
         const fetchTimetable = async () => {
@@ -88,6 +90,11 @@ export function StudentTimetable() {
                 setLoading(true)
                 const data = await getTimetableByUser() as TimetableEntry[]
                 setTimetableData(data)
+
+                // Fetch today's attendance status
+                const today = new Date().toISOString().split('T')[0]
+                const attendanceData = await getStudentTimetableAttendance(undefined, today)
+                setAttendanceStatus(attendanceData)
             } catch (error) {
                 console.error('Error fetching timetable:', error)
             } finally {
@@ -157,6 +164,38 @@ export function StudentTimetable() {
     const getCurrentDayClasses = () => {
         const today = currentTime.toLocaleDateString('en-US', { weekday: 'long' })
         return timetableData.filter(entry => entry.day === today)
+    }
+
+    const getAttendanceIndicator = (timetableId: number) => {
+        const status = attendanceStatus[timetableId]
+        if (!status) return null
+
+        if (status === 'present') {
+            return (
+                <div className="absolute top-1 left-1 bg-green-500 text-white rounded-full p-1 z-10">
+                    <Check className="w-3 h-3" />
+                </div>
+            )
+        } else if (status === 'absent') {
+            return (
+                <div className="absolute top-1 left-1 bg-red-500 text-white rounded-full p-1 z-10">
+                    <X className="w-3 h-3" />
+                </div>
+            )
+        }
+        return null
+    }
+
+    const getAttendanceStatusClass = (timetableId: number) => {
+        const status = attendanceStatus[timetableId]
+        if (!status) return ''
+
+        if (status === 'present') {
+            return 'ring-2 ring-green-400 bg-green-50 dark:bg-green-950'
+        } else if (status === 'absent') {
+            return 'ring-2 ring-red-400 bg-red-50 dark:bg-red-950'
+        }
+        return ''
     }
 
     if (loading) {
@@ -263,8 +302,8 @@ export function StudentTimetable() {
                                             <div
                                                 key={day}
                                                 className={`text-sm font-semibold text-center py-3 rounded-lg transition-colors ${isToday
-                                                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
-                                                        : 'bg-muted'
+                                                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
+                                                    : 'bg-muted'
                                                     }`}
                                             >
                                                 {day}
@@ -284,8 +323,8 @@ export function StudentTimetable() {
                                         <div key={timeSlot} className="grid grid-cols-7 gap-2 mb-2">
                                             {/* Time Column */}
                                             <div className={`text-sm text-center py-4 rounded-lg font-medium ${isCurrentHour
-                                                    ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 border border-yellow-300 dark:border-yellow-700'
-                                                    : 'bg-muted'
+                                                ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 border border-yellow-300 dark:border-yellow-700'
+                                                : 'bg-muted'
                                                 }`}>
                                                 {formatTime(timeSlot)}
                                             </div>
@@ -301,17 +340,20 @@ export function StudentTimetable() {
                                                             {classes.map(entry => {
                                                                 const colorScheme = courseColors[getCourseColorIndex(entry.course_id)]
                                                                 const isCurrent = isCurrentTimeSlot(day, entry.start_time, entry.end_time)
+                                                                const attendanceClass = getAttendanceStatusClass(entry.id)
 
                                                                 return (
                                                                     <div
                                                                         key={entry.id}
                                                                         className={`
                                                                             ${colorScheme.bg} ${colorScheme.border} ${colorScheme.text}
-                                                                            border rounded-lg p-3 transition-all duration-200 cursor-pointer
+                                                                            border rounded-lg p-3 transition-all duration-200 cursor-pointer relative
                                                                             hover:shadow-lg hover:scale-105
                                                                             ${isCurrent ? 'ring-2 ring-red-400 dark:ring-red-600 shadow-lg' : ''}
+                                                                            ${attendanceClass}
                                                                         `}
                                                                     >
+                                                                        {getAttendanceIndicator(entry.id)}
                                                                         <div className="space-y-1">
                                                                             <div className="font-bold text-sm truncate">
                                                                                 {entry.course_code}
@@ -410,6 +452,7 @@ export function StudentTimetable() {
                                             .map(entry => {
                                                 const colorScheme = courseColors[getCourseColorIndex(entry.course_id)]
                                                 const isCurrent = isCurrentTimeSlot(day, entry.start_time, entry.end_time)
+                                                const attendanceClass = getAttendanceStatusClass(entry.id)
 
                                                 return (
                                                     <div
@@ -419,8 +462,10 @@ export function StudentTimetable() {
                                                             border rounded-lg p-4 transition-all duration-200 cursor-pointer
                                                             hover:shadow-lg hover:scale-[1.02] relative
                                                             ${isCurrent ? 'ring-2 ring-red-400 dark:ring-red-600 shadow-lg' : ''}
+                                                            ${attendanceClass}
                                                         `}
                                                     >
+                                                        {getAttendanceIndicator(entry.id)}
                                                         {isCurrent && (
                                                             <Badge className="absolute top-2 right-2 bg-red-500 text-white text-xs">
                                                                 LIVE

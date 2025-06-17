@@ -322,6 +322,50 @@ export async function checkAttendanceStatus(courseId: number, date: string, time
   return { isMarked: false }
 }
 
+// Get attendance status for student timetable entries
+export async function getStudentTimetableAttendance(studentId?: number, date?: string) {
+  const user = await getCurrentUserServer()
+  if (!user || (user.role !== "student" && !studentId)) {
+    throw new Error("Unauthorized")
+  }
+
+  const targetStudentId = studentId || user.id
+  const targetDate = date || new Date().toISOString().split('T')[0]
+
+  try {
+    // Get attendance records for the student on the specified date
+    const attendanceRecords = await sql`
+      SELECT 
+        a.course_id,
+        a.timetable_id,
+        a.status,
+        t.start_time,
+        t.end_time,
+        t.day,
+        c.code as course_code,
+        c.name as course_name
+      FROM attendance a
+      JOIN timetable t ON a.timetable_id = t.id
+      JOIN courses c ON a.course_id = c.id
+      WHERE a.student_id = ${targetStudentId} 
+        AND a.date = ${targetDate}
+    `
+
+    // Create a map of timetable_id -> attendance status
+    const attendanceMap: Record<number, 'present' | 'absent'> = {}
+    attendanceRecords.forEach(record => {
+      if (record.timetable_id) {
+        attendanceMap[record.timetable_id] = record.status as 'present' | 'absent'
+      }
+    })
+
+    return attendanceMap
+  } catch (error) {
+    console.error('Error getting student timetable attendance:', error)
+    return {}
+  }
+}
+
 // Get attendance analytics for faculty dashboard
 export async function getFacultyAttendanceAnalytics() {
   const user = await getCurrentUserServer()

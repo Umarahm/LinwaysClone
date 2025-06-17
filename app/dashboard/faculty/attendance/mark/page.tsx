@@ -38,7 +38,7 @@ export default async function MarkAttendancePage({ searchParams }: PageProps) {
     const { courseId, timetableId, date } = await searchParams
 
     if (!courseId || !timetableId) {
-        redirect('/dashboard/faculty/timetable')
+        redirect('/dashboard?tab=my-timetable')
     }
 
     try {
@@ -54,7 +54,7 @@ export default async function MarkAttendancePage({ searchParams }: PageProps) {
 
         if (!timetableEntry || timetableEntry.faculty_id !== user.id) {
             console.log('Timetable entry not found or access denied')
-            redirect('/dashboard/faculty/timetable')
+            redirect('/dashboard?tab=my-timetable')
         }
 
         const currentDate = date || new Date().toISOString().split('T')[0]
@@ -94,7 +94,7 @@ export default async function MarkAttendancePage({ searchParams }: PageProps) {
                         {error instanceof Error ? error.message : 'An unexpected error occurred'}
                     </p>
                     <a
-                        href="/dashboard/faculty/timetable"
+                        href="/dashboard?tab=my-timetable"
                         className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                     >
                         Back to Timetable

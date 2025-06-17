@@ -17,10 +17,10 @@ interface UserProfile {
     email: string
     role: string
     department: string
-    phoneNumber: string
+    phoneNumber?: string
     avatar?: string
-    joinedAt: string
-    lastActive: string
+    joinedAt?: string
+    lastActive?: string
 }
 
 interface EditableFields {
@@ -31,10 +31,23 @@ interface EditableFields {
     confirmPassword: string
 }
 
-export function UserProfile() {
+interface UserProfileProps {
+    user?: {
+        id: number
+        email: string
+        fullName: string
+        role: string
+        department: string
+        avatar?: string
+    }
+    setUser?: (user: any) => void
+}
+
+export function UserProfile({ user: propUser }: UserProfileProps) {
     const [user, setUser] = React.useState<UserProfile | null>(null)
     const [isEditing, setIsEditing] = React.useState(false)
     const [isLoading, setIsLoading] = React.useState(false)
+    const [fetchLoading, setFetchLoading] = React.useState(true)
     const [avatarFile, setAvatarFile] = React.useState<File | null>(null)
     const [avatarPreview, setAvatarPreview] = React.useState<string>("")
 
@@ -46,32 +59,91 @@ export function UserProfile() {
         confirmPassword: ""
     })
 
-    // Mock data - replace with actual API calls
+    // Fetch user profile data
     React.useEffect(() => {
-        // Simulate API call to fetch user profile
-        setTimeout(() => {
-            const mockUser: UserProfile = {
-                id: 1,
-                fullName: "John Doe",
-                email: "john.doe@presidency.edu",
-                role: "student",
-                department: "Computer Science",
-                phoneNumber: "+1 (555) 123-4567",
-                avatar: "/placeholder.svg?height=200&width=200",
-                joinedAt: "2023-09-01T00:00:00Z",
-                lastActive: "2024-12-23T10:30:00Z"
-            }
+        const fetchUserProfile = async () => {
+            try {
+                setFetchLoading(true)
+                const response = await fetch('/api/auth/me')
+                const data = await response.json()
 
-            setUser(mockUser)
-            setEditableFields({
-                fullName: mockUser.fullName,
-                phoneNumber: mockUser.phoneNumber,
-                currentPassword: "",
-                newPassword: "",
-                confirmPassword: ""
-            })
-        }, 1000)
-    }, [])
+                if (data.success && data.user) {
+                    const userProfile: UserProfile = {
+                        id: data.user.id,
+                        fullName: data.user.fullName,
+                        email: data.user.email,
+                        role: data.user.role,
+                        department: data.user.department,
+                        phoneNumber: data.user.phoneNumber || "",
+                        avatar: data.user.avatar || "/placeholder.svg?height=200&width=200",
+                        joinedAt: data.user.createdAt || new Date().toISOString(),
+                        lastActive: data.user.lastActive || new Date().toISOString()
+                    }
+
+                    setUser(userProfile)
+                    setEditableFields({
+                        fullName: userProfile.fullName,
+                        phoneNumber: userProfile.phoneNumber || "",
+                        currentPassword: "",
+                        newPassword: "",
+                        confirmPassword: ""
+                    })
+                } else if (propUser) {
+                    // Fallback to prop user if API fails
+                    const userProfile: UserProfile = {
+                        id: propUser.id,
+                        fullName: propUser.fullName,
+                        email: propUser.email,
+                        role: propUser.role,
+                        department: propUser.department,
+                        phoneNumber: "",
+                        avatar: "/placeholder.svg?height=200&width=200",
+                        joinedAt: new Date().toISOString(),
+                        lastActive: new Date().toISOString()
+                    }
+
+                    setUser(userProfile)
+                    setEditableFields({
+                        fullName: userProfile.fullName,
+                        phoneNumber: userProfile.phoneNumber || "",
+                        currentPassword: "",
+                        newPassword: "",
+                        confirmPassword: ""
+                    })
+                }
+            } catch (error) {
+                console.error('Error fetching user profile:', error)
+
+                // Fallback to prop user if API fails
+                if (propUser) {
+                    const userProfile: UserProfile = {
+                        id: propUser.id,
+                        fullName: propUser.fullName,
+                        email: propUser.email,
+                        role: propUser.role,
+                        department: propUser.department,
+                        phoneNumber: "",
+                        avatar: "/placeholder.svg?height=200&width=200",
+                        joinedAt: new Date().toISOString(),
+                        lastActive: new Date().toISOString()
+                    }
+
+                    setUser(userProfile)
+                    setEditableFields({
+                        fullName: userProfile.fullName,
+                        phoneNumber: userProfile.phoneNumber || "",
+                        currentPassword: "",
+                        newPassword: "",
+                        confirmPassword: ""
+                    })
+                }
+            } finally {
+                setFetchLoading(false)
+            }
+        }
+
+        fetchUserProfile()
+    }, [propUser])
 
     const handleEdit = () => {
         setIsEditing(true)
@@ -85,7 +157,7 @@ export function UserProfile() {
         setAvatarPreview("")
         setEditableFields({
             fullName: user.fullName,
-            phoneNumber: user.phoneNumber,
+            phoneNumber: user.phoneNumber || "",
             currentPassword: "",
             newPassword: "",
             confirmPassword: ""
@@ -108,29 +180,58 @@ export function UserProfile() {
 
         setIsLoading(true)
 
-        // Simulate API call
-        setTimeout(() => {
-            const updatedUser: UserProfile = {
-                ...user,
-                fullName: editableFields.fullName,
-                phoneNumber: editableFields.phoneNumber,
-                avatar: avatarPreview || user.avatar
+        try {
+            // Create FormData for the profile update
+            const formData = new FormData()
+            formData.append('fullName', editableFields.fullName)
+            formData.append('phoneNumber', editableFields.phoneNumber)
+
+            if (editableFields.currentPassword && editableFields.newPassword) {
+                formData.append('currentPassword', editableFields.currentPassword)
+                formData.append('newPassword', editableFields.newPassword)
             }
 
-            setUser(updatedUser)
-            setIsEditing(false)
-            setAvatarFile(null)
-            setAvatarPreview("")
-            setEditableFields({
-                ...editableFields,
-                currentPassword: "",
-                newPassword: "",
-                confirmPassword: ""
-            })
-            setIsLoading(false)
+            if (avatarFile) {
+                formData.append('avatar', avatarFile)
+            }
 
-            alert("Profile updated successfully!")
-        }, 2000)
+            const response = await fetch('/api/auth/me', {
+                method: 'PUT',
+                body: formData
+            })
+
+            const data = await response.json()
+
+            if (data.success) {
+                const updatedUser: UserProfile = {
+                    ...user,
+                    fullName: editableFields.fullName,
+                    phoneNumber: editableFields.phoneNumber,
+                    avatar: avatarPreview || user.avatar
+                }
+
+                setUser(updatedUser)
+                if (typeof setUser === 'function') setUser(updatedUser)
+                setIsEditing(false)
+                setAvatarFile(null)
+                setAvatarPreview("")
+                setEditableFields({
+                    ...editableFields,
+                    currentPassword: "",
+                    newPassword: "",
+                    confirmPassword: ""
+                })
+
+                alert("Profile updated successfully!")
+            } else {
+                alert(data.message || "Failed to update profile")
+            }
+        } catch (error) {
+            console.error('Error updating profile:', error)
+            alert("Failed to update profile. Please try again.")
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -154,12 +255,32 @@ export function UserProfile() {
         }
     }
 
-    if (!user) {
+    const getRoleDisplayName = (role: string) => {
+        switch (role.toLowerCase()) {
+            case 'admin': return 'Administrator'
+            case 'faculty': return 'Faculty Member'
+            case 'student': return 'Student'
+            default: return role.charAt(0).toUpperCase() + role.slice(1)
+        }
+    }
+
+    if (fetchLoading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-background">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400 mx-auto"></div>
                     <p className="mt-2 text-muted-foreground">Loading profile...</p>
+                </div>
+            </div>
+        )
+    }
+
+    if (!user) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-background">
+                <div className="text-center">
+                    <h3 className="text-lg font-semibold text-foreground mb-2">Profile Not Available</h3>
+                    <p className="text-muted-foreground">Unable to load user profile data.</p>
                 </div>
             </div>
         )
@@ -233,7 +354,7 @@ export function UserProfile() {
                             <h3 className="text-xl font-semibold">{user.fullName}</h3>
                             <p className="text-muted-foreground">{user.email}</p>
                             <Badge className={getRoleColor(user.role)}>
-                                {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                                {getRoleDisplayName(user.role)}
                             </Badge>
                         </div>
                     </CardContent>
@@ -299,7 +420,7 @@ export function UserProfile() {
                                 <Label htmlFor="role">Role</Label>
                                 <div className="flex items-center gap-2 p-2 bg-muted rounded">
                                     <User className="h-4 w-4 text-muted-foreground" />
-                                    <span>{user.role.charAt(0).toUpperCase() + user.role.slice(1)}</span>
+                                    <span>{getRoleDisplayName(user.role)}</span>
                                     <Badge variant="outline">Read-only</Badge>
                                 </div>
                                 <p className="text-xs text-muted-foreground">
@@ -319,7 +440,7 @@ export function UserProfile() {
                                 <Label htmlFor="joinedAt">Member Since</Label>
                                 <div className="flex items-center gap-2 p-2 bg-muted rounded">
                                     <User className="h-4 w-4 text-muted-foreground" />
-                                    <span>{new Date(user.joinedAt).toLocaleDateString('en-US', {
+                                    <span>{new Date(user.joinedAt || "").toLocaleDateString('en-US', {
                                         year: 'numeric',
                                         month: 'long',
                                         day: 'numeric'
@@ -403,7 +524,7 @@ export function UserProfile() {
                         <div className="space-y-2">
                             <Label>Last Active</Label>
                             <p className="text-sm text-muted-foreground">
-                                {new Date(user.lastActive).toLocaleString()}
+                                {new Date(user.lastActive || "").toLocaleString()}
                             </p>
                         </div>
                         <div className="space-y-2">

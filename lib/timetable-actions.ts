@@ -363,18 +363,19 @@ export async function markTimetableAttendance(timetableId: number) {
     const entry = timetableEntry[0]
     const today = new Date().toISOString().split('T')[0]
 
-    // Check if attendance is already marked for today
+    // Check if attendance is already marked for today for this specific timetable entry
     const existingAttendance = await sql`
       SELECT COUNT(*) as count FROM attendance
       WHERE course_id = ${entry.course_id} 
       AND date = ${today}
       AND marked_by = ${user.id}
+      AND timetable_id = ${timetableId}
     `
 
     if (parseInt(existingAttendance[0].count) > 0) {
       return {
         success: false,
-        message: "Attendance already marked for today"
+        message: "Attendance already marked for this class session"
       }
     }
 
@@ -397,15 +398,15 @@ export async function markTimetableAttendance(timetableId: number) {
     // Mark all students as present by default (faculty can change later if needed)
     for (const student of enrolledStudents) {
       await sql`
-        INSERT INTO attendance (student_id, course_id, date, status, marked_by)
-        VALUES (${student.id}, ${entry.course_id}, ${today}, 'present', ${user.id})
+        INSERT INTO attendance (student_id, course_id, date, status, marked_by, timetable_id)
+        VALUES (${student.id}, ${entry.course_id}, ${today}, 'present', ${user.id}, ${timetableId})
       `
     }
 
     // Revalidate paths to update UI immediately
     revalidatePath('/dashboard/faculty')
-    revalidatePath('/dashboard/faculty/timetable')
     revalidatePath('/dashboard')
+    revalidatePath('/')
 
     return {
       success: true,
@@ -440,12 +441,13 @@ export async function checkTimetableAttendance(timetableId: number) {
 
     const today = new Date().toISOString().split('T')[0]
 
-    // Check if attendance is already marked for today
+    // Check if attendance is already marked for today for this specific timetable entry
     const existingAttendance = await sql`
       SELECT COUNT(*) as count FROM attendance
       WHERE course_id = ${timetableEntry[0].course_id} 
       AND date = ${today}
       AND marked_by = ${user.id}
+      AND timetable_id = ${timetableId}
     `
 
     return {

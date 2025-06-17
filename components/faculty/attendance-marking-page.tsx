@@ -159,11 +159,30 @@ export function FacultyAttendanceMarking({
             const result = await markAttendance(formData)
 
             if (result.success) {
+                // Show sequential toast messages for faculty
                 toast({
-                    title: "✅ Attendance Saved Successfully",
-                    description: result.message,
+                    title: "✅ Attendance marked successfully",
+                    description: `Recorded attendance for ${attendanceArray.length} students`,
                 })
-                router.push('/dashboard/faculty/timetable')
+
+                setTimeout(() => {
+                    toast({
+                        title: "📊 Updated Student attendance",
+                        description: "Student attendance records have been updated in the system",
+                    })
+                }, 1000)
+
+                setTimeout(() => {
+                    toast({
+                        title: "📝 Daily Work updated",
+                        description: "Daily work progress has been tracked and recorded",
+                    })
+                }, 2000)
+
+                // Redirect to dashboard with timetable sidebar after a short delay
+                setTimeout(() => {
+                    router.push('/dashboard?tab=my-timetable')
+                }, 3000)
             } else {
                 toast({
                     title: "Failed to Save Attendance",
@@ -195,7 +214,7 @@ export function FacultyAttendanceMarking({
                     <div className="flex items-center gap-4">
                         <Button
                             variant="outline"
-                            onClick={() => router.back()}
+                            onClick={() => router.push('/dashboard?tab=my-timetable')}
                             className="flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 hover:scale-105"
                         >
                             <ArrowLeft className="w-4 h-4" />
