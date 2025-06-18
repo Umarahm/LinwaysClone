@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { getTimetableByUser } from '@/lib/timetable-actions'
 import { getStudentTimetableAttendance } from '@/lib/attendance-actions'
-import { Clock, MapPin, BookOpen, GraduationCap, User, Check, X } from 'lucide-react'
+import { injectUniversalBreaks, isBreakEntry, BreakEntry } from '@/lib/utils'
+import { Clock, MapPin, BookOpen, GraduationCap, User, Check, X, UtensilsCrossed } from 'lucide-react'
 
 interface TimetableEntry {
     id: number
@@ -60,35 +61,50 @@ const courseColors = [
     },
 ]
 
+// Break colors for mini display
+const breakColors = {
+    'Lunch Break': { bg: 'bg-green-500', icon: UtensilsCrossed }
+}
+
 export function StudentMiniTimetable() {
-    const [todayClasses, setTodayClasses] = useState<TimetableEntry[]>([])
+    const [timetableData, setTimetableData] = useState<(TimetableEntry | BreakEntry)[]>([])
     const [loading, setLoading] = useState(true)
+    const [currentTime, setCurrentTime] = useState(new Date())
     const [attendanceStatus, setAttendanceStatus] = useState<Record<number, 'present' | 'absent'>>({})
 
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long' })
-    const currentTime = new Date().getHours() * 100 + new Date().getMinutes()
+    const currentTimeInMinutes = currentTime.getHours() * 60 + currentTime.getMinutes()
 
     useEffect(() => {
-        const fetchTodayClasses = async () => {
+        const fetchTimetable = async () => {
             try {
                 setLoading(true)
-                const allClasses = await getTimetableByUser() as TimetableEntry[]
-                const todaySchedule = allClasses.filter(entry => entry.day === today)
-                setTodayClasses(todaySchedule)
+                const data = await getTimetableByUser() as TimetableEntry[]
+
+                // Inject universal breaks into the timetable data
+                const dataWithBreaks = injectUniversalBreaks(data)
+                setTimetableData(dataWithBreaks)
 
                 // Fetch today's attendance status
-                const todayDate = new Date().toISOString().split('T')[0]
-                const attendanceData = await getStudentTimetableAttendance(undefined, todayDate)
+                const today = new Date().toISOString().split('T')[0]
+                const attendanceData = await getStudentTimetableAttendance(undefined, today)
                 setAttendanceStatus(attendanceData)
             } catch (error) {
-                console.error('Error fetching today\'s classes:', error)
+                console.error('Error fetching timetable:', error)
             } finally {
                 setLoading(false)
             }
         }
 
-        fetchTodayClasses()
-    }, [today])
+        fetchTimetable()
+
+        // Update current time every minute
+        const interval = setInterval(() => {
+            setCurrentTime(new Date())
+        }, 60000)
+
+        return () => clearInterval(interval)
+    }, [])
 
     const formatTime = (time: string) => {
         const [hour, minute] = time.split(':')
@@ -105,17 +121,17 @@ export function StudentMiniTimetable() {
     const isCurrentClass = (startTime: string, endTime: string) => {
         const start = parseInt(startTime.replace(':', ''))
         const end = parseInt(endTime.replace(':', ''))
-        return currentTime >= start && currentTime <= end
+        return currentTimeInMinutes >= start && currentTimeInMinutes <= end
     }
 
     const isUpcoming = (startTime: string) => {
         const start = parseInt(startTime.replace(':', ''))
-        return currentTime < start
+        return currentTimeInMinutes < start
     }
 
     const isPast = (endTime: string) => {
         const end = parseInt(endTime.replace(':', ''))
-        return currentTime > end
+        return currentTimeInMinutes > end
     }
 
     const getAttendanceIndicator = (timetableId: number) => {
@@ -168,7 +184,7 @@ export function StudentMiniTimetable() {
         )
     }
 
-    if (todayClasses.length === 0) {
+    if (timetableData.length === 0) {
         return (
             <Card className="border-0 bg-transparent text-white">
                 <CardHeader className="pb-3">
@@ -197,14 +213,15 @@ export function StudentMiniTimetable() {
                         Today's Schedule
                     </CardTitle>
                     <Badge variant="secondary" className="bg-white/20 text-white border-white/30 text-xs">
-                        {today} • {todayClasses.length} {todayClasses.length === 1 ? 'class' : 'classes'}
+                        {today} • {timetableData.length} {timetableData.length === 1 ? 'class' : 'classes'}
                     </Badge>
                 </div>
             </CardHeader>
             <CardContent>
-                <div className={todayClasses.length > 1 ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" : "space-y-3"}>
-                    {todayClasses
+                <div className={timetableData.length > 1 ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" : "space-y-3"}>
+                    {timetableData
                         .sort((a, b) => a.start_time.localeCompare(b.start_time))
+                        .filter((entry): entry is TimetableEntry => !isBreakEntry(entry))
                         .map((entry) => {
                             const colorScheme = courseColors[getCourseColorIndex(entry.course_id)]
                             const isCurrent = isCurrentClass(entry.start_time, entry.end_time)
@@ -306,7 +323,7 @@ export function StudentMiniTimetable() {
                                             <div className="flex items-center gap-1">
                                                 <User className="w-3 h-3" />
                                                 <span className="truncate">
-                                                    {entry.faculty_name.split(' ').slice(-1)[0]}
+                                                    {entry.faculty_name ? entry.faculty_name.split(' ').slice(-1)[0] : 'TBA'}
                                                 </span>
                                             </div>
                                         </div>
@@ -328,7 +345,7 @@ export function StudentMiniTimetable() {
                                     {upcoming && (
                                         <div className="mt-3 pt-2 border-t border-white/20">
                                             <div className="text-xs text-white/70">
-                                                Starts in {Math.floor((parseInt(entry.start_time.replace(':', '')) - currentTime) / 100)} hour(s)
+                                                Starts in {Math.floor((parseInt(entry.start_time.replace(':', '')) - currentTimeInMinutes) / 60)} minute(s)
                                             </div>
                                         </div>
                                     )}
@@ -338,13 +355,13 @@ export function StudentMiniTimetable() {
                 </div>
 
                 {/* Next class indicator if no current class */}
-                {todayClasses.length > 0 && !todayClasses.some(entry => isCurrentClass(entry.start_time, entry.end_time)) && (
+                {timetableData.length > 0 && !timetableData.some(entry => !isBreakEntry(entry) && isCurrentClass(entry.start_time, entry.end_time)) && (
                     <div className="mt-4 pt-3 border-t border-white/20">
                         <div className="text-center">
-                            {todayClasses.some(entry => isUpcoming(entry.start_time)) ? (
+                            {timetableData.some(entry => !isBreakEntry(entry) && isUpcoming(entry.start_time)) ? (
                                 <div className="text-xs text-white/70">
-                                    Next class: {formatTime(todayClasses
-                                        .filter(entry => isUpcoming(entry.start_time))
+                                    Next class: {formatTime(timetableData
+                                        .filter((entry): entry is TimetableEntry => !isBreakEntry(entry) && isUpcoming(entry.start_time))
                                         .sort((a, b) => a.start_time.localeCompare(b.start_time))[0]?.start_time)}
                                 </div>
                             ) : (

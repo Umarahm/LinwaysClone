@@ -130,14 +130,14 @@ export function AdminDashboard() {
           </div>
 
           {/* Management Overview */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* User Management */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Student Management */}
             <div className="admin-glass rounded-3xl overflow-hidden glow-effect subtle-wave">
               <Card className="border-0 bg-transparent text-white">
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-2 text-white">
                     <Users className="w-5 h-5 text-blue-300" />
-                    User Management
+                    Student Management
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -146,12 +146,30 @@ export function AdminDashboard() {
                     <Badge variant="secondary" className="bg-white/20 text-white border-white/30">{studentUsers.length}</Badge>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                    <span className="text-white">Active Enrollments</span>
+                    <Badge variant="secondary" className="bg-white/20 text-white border-white/30">{enrollmentStats.totalEnrollments}</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Faculty Management */}
+            <div className="admin-glass rounded-3xl overflow-hidden glow-effect subtle-wave">
+              <Card className="border-0 bg-transparent text-white">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    <UserCheck className="w-5 h-5 text-green-300" />
+                    Faculty Management
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
                     <span className="text-white">Total Faculty</span>
                     <Badge variant="secondary" className="bg-white/20 text-white border-white/30">{facultyUsers.length}</Badge>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                    <span className="text-white">Total Users</span>
-                    <Badge variant="secondary" className="bg-white/20 text-white border-white/30">{studentUsers.length + facultyUsers.length}</Badge>
+                    <span className="text-white">Departments</span>
+                    <Badge variant="secondary" className="bg-white/20 text-white border-white/30">{new Set([...studentUsers, ...facultyUsers].map(u => u.department).filter(Boolean)).size}</Badge>
                   </div>
                 </CardContent>
               </Card>
@@ -174,10 +192,6 @@ export function AdminDashboard() {
                   <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
                     <span className="text-white">Active Courses</span>
                     <Badge variant="secondary" className="bg-white/20 text-white border-white/30">{allCourses.length}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                    <span className="text-white">Departments</span>
-                    <Badge variant="secondary" className="bg-white/20 text-white border-white/30">{new Set([...studentUsers, ...facultyUsers].map(u => u.department).filter(Boolean)).size}</Badge>
                   </div>
                 </CardContent>
               </Card>

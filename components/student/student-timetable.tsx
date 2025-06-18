@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { getTimetableByUser } from '@/lib/timetable-actions'
 import { getStudentTimetableAttendance } from '@/lib/attendance-actions'
-import { Calendar, Clock, MapPin, BookOpen, User, GraduationCap, Check, X } from 'lucide-react'
+import { injectUniversalBreaks, isBreakEntry, formatBreakTime, isCurrentBreakTime, BreakEntry } from '@/lib/utils'
+import { Calendar, Clock, MapPin, BookOpen, User, GraduationCap, Check, X, UtensilsCrossed } from 'lucide-react'
 
 interface TimetableEntry {
     id: number
@@ -78,8 +79,18 @@ const courseColors = [
     },
 ]
 
+// Break styling
+const breakColors = {
+    'Lunch Break': {
+        bg: 'bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900 dark:to-green-800',
+        text: 'text-green-800 dark:text-green-200',
+        border: 'border-green-300 dark:border-green-700',
+        icon: UtensilsCrossed
+    }
+}
+
 export function StudentTimetable() {
-    const [timetableData, setTimetableData] = useState<TimetableEntry[]>([])
+    const [timetableData, setTimetableData] = useState<(TimetableEntry | BreakEntry)[]>([])
     const [loading, setLoading] = useState(true)
     const [currentTime, setCurrentTime] = useState(new Date())
     const [attendanceStatus, setAttendanceStatus] = useState<Record<number, 'present' | 'absent'>>({})
@@ -89,9 +100,12 @@ export function StudentTimetable() {
             try {
                 setLoading(true)
                 const data = await getTimetableByUser() as TimetableEntry[]
-                setTimetableData(data)
 
-                // Fetch today's attendance status
+                // Inject universal breaks into the timetable data
+                const dataWithBreaks = injectUniversalBreaks(data, daysOfWeek)
+                setTimetableData(dataWithBreaks)
+
+                // Fetch today's attendance status (only for regular classes, not breaks)
                 const today = new Date().toISOString().split('T')[0]
                 const attendanceData = await getStudentTimetableAttendance(undefined, today)
                 setAttendanceStatus(attendanceData)
@@ -153,17 +167,18 @@ export function StudentTimetable() {
     }
 
     const getUniqueCoursesCount = () => {
-        const uniqueCourses = new Set(timetableData.map(entry => entry.course_id))
+        const courses = timetableData.filter(entry => !isBreakEntry(entry)) as TimetableEntry[]
+        const uniqueCourses = new Set(courses.map(entry => entry.course_id))
         return uniqueCourses.size
     }
 
     const getTotalClassesPerWeek = () => {
-        return timetableData.length
+        return timetableData.filter(entry => !isBreakEntry(entry)).length
     }
 
     const getCurrentDayClasses = () => {
         const today = currentTime.toLocaleDateString('en-US', { weekday: 'long' })
-        return timetableData.filter(entry => entry.day === today)
+        return timetableData.filter(entry => entry.day === today && !isBreakEntry(entry))
     }
 
     const getAttendanceIndicator = (timetableId: number) => {
@@ -338,49 +353,89 @@ export function StudentTimetable() {
                                                     return (
                                                         <div key={`${day}-${timeSlot}`} className="space-y-1">
                                                             {classes.map(entry => {
-                                                                const colorScheme = courseColors[getCourseColorIndex(entry.course_id)]
-                                                                const isCurrent = isCurrentTimeSlot(day, entry.start_time, entry.end_time)
-                                                                const attendanceClass = getAttendanceStatusClass(entry.id)
+                                                                if (isBreakEntry(entry)) {
+                                                                    // Render break entry
+                                                                    const breakStyle = breakColors[entry.break_name as keyof typeof breakColors] || breakColors['Lunch Break']
+                                                                    const isCurrent = isCurrentTimeSlot(day, entry.start_time, entry.end_time)
+                                                                    const BreakIcon = breakStyle.icon
 
-                                                                return (
-                                                                    <div
-                                                                        key={entry.id}
-                                                                        className={`
+                                                                    return (
+                                                                        <div
+                                                                            key={entry.id}
+                                                                            className={`
+                                                                                ${breakStyle.bg} ${breakStyle.border} ${breakStyle.text}
+                                                                                border rounded-lg p-3 transition-all duration-200 relative
+                                                                                ${isCurrent ? 'ring-2 ring-orange-400 dark:ring-orange-600 shadow-lg animate-pulse' : ''}
+                                                                            `}
+                                                                        >
+                                                                            <div className="space-y-1">
+                                                                                <div className="font-bold text-sm flex items-center gap-1">
+                                                                                    <BreakIcon className="w-3 h-3" />
+                                                                                    {entry.break_name}
+                                                                                </div>
+                                                                                <div className="text-xs opacity-80 flex items-center gap-1">
+                                                                                    <MapPin className="w-3 h-3" />
+                                                                                    <span>{entry.room}</span>
+                                                                                </div>
+                                                                                <div className="text-xs opacity-70">
+                                                                                    {formatTime(entry.start_time)} - {formatTime(entry.end_time)}
+                                                                                </div>
+                                                                            </div>
+
+                                                                            {isCurrent && (
+                                                                                <Badge className="mt-2 bg-orange-500 text-white text-xs w-full justify-center">
+                                                                                    BREAK TIME
+                                                                                </Badge>
+                                                                            )}
+                                                                        </div>
+                                                                    )
+                                                                } else {
+                                                                    // Render regular class entry
+                                                                    const classEntry = entry as TimetableEntry;
+                                                                    const colorScheme = courseColors[getCourseColorIndex(classEntry.course_id)]
+                                                                    const isCurrent = isCurrentTimeSlot(day, classEntry.start_time, classEntry.end_time)
+                                                                    const attendanceClass = getAttendanceStatusClass(classEntry.id)
+
+                                                                    return (
+                                                                        <div
+                                                                            key={classEntry.id}
+                                                                            className={`
                                                                             ${colorScheme.bg} ${colorScheme.border} ${colorScheme.text}
                                                                             border rounded-lg p-3 transition-all duration-200 cursor-pointer relative
                                                                             hover:shadow-lg hover:scale-105
                                                                             ${isCurrent ? 'ring-2 ring-red-400 dark:ring-red-600 shadow-lg' : ''}
                                                                             ${attendanceClass}
                                                                         `}
-                                                                    >
-                                                                        {getAttendanceIndicator(entry.id)}
-                                                                        <div className="space-y-1">
-                                                                            <div className="font-bold text-sm truncate">
-                                                                                {entry.course_code}
+                                                                        >
+                                                                            {getAttendanceIndicator(classEntry.id)}
+                                                                            <div className="space-y-1">
+                                                                                <div className="font-bold text-sm truncate">
+                                                                                    {classEntry.course_code}
+                                                                                </div>
+                                                                                <div className="text-xs opacity-90 truncate">
+                                                                                    {classEntry.course_name}
+                                                                                </div>
+                                                                                <div className="flex items-center gap-1 text-xs opacity-80">
+                                                                                    <MapPin className="w-3 h-3" />
+                                                                                    <span className="truncate">{classEntry.room}</span>
+                                                                                </div>
+                                                                                <div className="flex items-center gap-1 text-xs opacity-80">
+                                                                                    <User className="w-3 h-3" />
+                                                                                    <span className="truncate">{classEntry.faculty_name}</span>
+                                                                                </div>
+                                                                                <div className="text-xs opacity-70">
+                                                                                    {formatTime(classEntry.start_time)} - {formatTime(classEntry.end_time)}
+                                                                                </div>
                                                                             </div>
-                                                                            <div className="text-xs opacity-90 truncate">
-                                                                                {entry.course_name}
-                                                                            </div>
-                                                                            <div className="flex items-center gap-1 text-xs opacity-80">
-                                                                                <MapPin className="w-3 h-3" />
-                                                                                <span className="truncate">{entry.room}</span>
-                                                                            </div>
-                                                                            <div className="flex items-center gap-1 text-xs opacity-80">
-                                                                                <User className="w-3 h-3" />
-                                                                                <span className="truncate">{entry.faculty_name}</span>
-                                                                            </div>
-                                                                            <div className="text-xs opacity-70">
-                                                                                {formatTime(entry.start_time)} - {formatTime(entry.end_time)}
-                                                                            </div>
-                                                                        </div>
 
-                                                                        {isCurrent && (
-                                                                            <Badge className="mt-2 bg-red-500 text-white text-xs w-full justify-center">
-                                                                                LIVE NOW
-                                                                            </Badge>
-                                                                        )}
-                                                                    </div>
-                                                                )
+                                                                            {isCurrent && (
+                                                                                <Badge className="mt-2 bg-red-500 text-white text-xs w-full justify-center">
+                                                                                    LIVE NOW
+                                                                                </Badge>
+                                                                            )}
+                                                                        </div>
+                                                                    )
+                                                                }
                                                             })}
                                                         </div>
                                                     )
@@ -450,63 +505,116 @@ export function StudentTimetable() {
                                         {dayClasses
                                             .sort((a, b) => a.start_time.localeCompare(b.start_time))
                                             .map(entry => {
-                                                const colorScheme = courseColors[getCourseColorIndex(entry.course_id)]
-                                                const isCurrent = isCurrentTimeSlot(day, entry.start_time, entry.end_time)
-                                                const attendanceClass = getAttendanceStatusClass(entry.id)
+                                                if (isBreakEntry(entry)) {
+                                                    // Render break entry in mobile view
+                                                    const breakStyle = breakColors[entry.break_name as keyof typeof breakColors] || breakColors['Lunch Break']
+                                                    const isCurrent = isCurrentTimeSlot(day, entry.start_time, entry.end_time)
+                                                    const BreakIcon = breakStyle.icon
 
-                                                return (
-                                                    <div
-                                                        key={entry.id}
-                                                        className={`
-                                                            ${colorScheme.bg} ${colorScheme.border} ${colorScheme.text}
-                                                            border rounded-lg p-4 transition-all duration-200 cursor-pointer
-                                                            hover:shadow-lg hover:scale-[1.02] relative
-                                                            ${isCurrent ? 'ring-2 ring-red-400 dark:ring-red-600 shadow-lg' : ''}
-                                                            ${attendanceClass}
+                                                    return (
+                                                        <div
+                                                            key={entry.id}
+                                                            className={`
+                                                                ${breakStyle.bg} ${breakStyle.border} ${breakStyle.text}
+                                                                border rounded-lg p-4 transition-all duration-200 relative
+                                                                ${isCurrent ? 'ring-2 ring-orange-400 dark:ring-orange-600 shadow-lg animate-pulse' : ''}
                                                         `}
-                                                    >
-                                                        {getAttendanceIndicator(entry.id)}
-                                                        {isCurrent && (
-                                                            <Badge className="absolute top-2 right-2 bg-red-500 text-white text-xs">
-                                                                LIVE
-                                                            </Badge>
-                                                        )}
+                                                        >
+                                                            {isCurrent && (
+                                                                <Badge className="absolute top-2 right-2 bg-orange-500 text-white text-xs">
+                                                                    BREAK
+                                                                </Badge>
+                                                            )}
 
-                                                        <div className="grid grid-cols-12 gap-3 items-center">
-                                                            {/* Time */}
-                                                            <div className="col-span-3">
-                                                                <div className="font-bold text-sm">
-                                                                    {formatTime(entry.start_time)}
+                                                            <div className="grid grid-cols-12 gap-3 items-center">
+                                                                {/* Time */}
+                                                                <div className="col-span-3">
+                                                                    <div className="font-bold text-sm">
+                                                                        {formatTime(entry.start_time)}
+                                                                    </div>
+                                                                    <div className="text-xs opacity-70">
+                                                                        {formatTime(entry.end_time)}
+                                                                    </div>
                                                                 </div>
-                                                                <div className="text-xs opacity-70">
-                                                                    {formatTime(entry.end_time)}
+
+                                                                {/* Break Info */}
+                                                                <div className="col-span-6">
+                                                                    <div className="font-bold text-sm flex items-center gap-2">
+                                                                        <BreakIcon className="w-4 h-4" />
+                                                                        {entry.break_name}
+                                                                    </div>
+                                                                    <div className="flex items-center gap-1 text-xs opacity-80 mt-1">
+                                                                        <MapPin className="w-3 h-3" />
+                                                                        <span>{entry.room}</span>
+                                                                    </div>
                                                                 </div>
+
+                                                                {/* Empty column for layout consistency */}
+                                                                <div className="col-span-3"></div>
                                                             </div>
+                                                        </div>
+                                                    )
+                                                } else {
+                                                    // Render regular class entry in mobile view
+                                                    const classEntry = entry as TimetableEntry;
+                                                    const colorScheme = courseColors[getCourseColorIndex(classEntry.course_id)]
+                                                    const isCurrent = isCurrentTimeSlot(day, classEntry.start_time, classEntry.end_time)
+                                                    const attendanceClass = getAttendanceStatusClass(classEntry.id)
 
-                                                            {/* Course Info */}
-                                                            <div className="col-span-6">
-                                                                <div className="font-bold text-sm">
-                                                                    {entry.course_code}
-                                                                </div>
-                                                                <div className="text-xs opacity-90 truncate">
-                                                                    {entry.course_name}
-                                                                </div>
-                                                                <div className="flex items-center gap-1 text-xs opacity-80 mt-1">
-                                                                    <MapPin className="w-3 h-3" />
-                                                                    <span>{entry.room}</span>
-                                                                </div>
-                                                            </div>
+                                                    return (
+                                                        <div
+                                                            key={classEntry.id}
+                                                            className={`
+                                                                ${colorScheme.bg} ${colorScheme.border} ${colorScheme.text}
+                                                                border rounded-lg p-4 transition-all duration-200 cursor-pointer
+                                                                hover:shadow-lg hover:scale-[1.02] relative
+                                                                ${isCurrent ? 'ring-2 ring-red-400 dark:ring-red-600 shadow-lg' : ''}
+                                                                ${attendanceClass}
+                                                            `}
+                                                        >
+                                                            {getAttendanceIndicator(classEntry.id)}
+                                                            {isCurrent && (
+                                                                <Badge className="absolute top-2 right-2 bg-red-500 text-white text-xs">
+                                                                    LIVE
+                                                                </Badge>
+                                                            )}
 
-                                                            {/* Faculty */}
-                                                            <div className="col-span-3 text-right">
-                                                                <div className="flex items-center justify-end gap-1 text-xs opacity-80">
-                                                                    <User className="w-3 h-3" />
-                                                                    <span className="truncate">{entry.faculty_name}</span>
+                                                            <div className="grid grid-cols-12 gap-3 items-center">
+                                                                {/* Time */}
+                                                                <div className="col-span-3">
+                                                                    <div className="font-bold text-sm">
+                                                                        {formatTime(classEntry.start_time)}
+                                                                    </div>
+                                                                    <div className="text-xs opacity-70">
+                                                                        {formatTime(classEntry.end_time)}
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Course Info */}
+                                                                <div className="col-span-6">
+                                                                    <div className="font-bold text-sm">
+                                                                        {classEntry.course_code}
+                                                                    </div>
+                                                                    <div className="text-xs opacity-90 truncate">
+                                                                        {classEntry.course_name}
+                                                                    </div>
+                                                                    <div className="flex items-center gap-1 text-xs opacity-80 mt-1">
+                                                                        <MapPin className="w-3 h-3" />
+                                                                        <span>{classEntry.room}</span>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Faculty */}
+                                                                <div className="col-span-3 text-right">
+                                                                    <div className="flex items-center justify-end gap-1 text-xs opacity-80">
+                                                                        <User className="w-3 h-3" />
+                                                                        <span className="truncate">{classEntry.faculty_name}</span>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                )
+                                                    )
+                                                }
                                             })}
                                     </div>
                                 )}
@@ -538,6 +646,22 @@ export function StudentTimetable() {
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 border-2 border-dashed border-muted-foreground/20 bg-muted/30 rounded"></div>
                             <span>Free time slot</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-green-100 dark:bg-green-900 border border-green-300 dark:border-green-700 rounded"></div>
+                            <span>Lunch Break</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-yellow-100 dark:bg-yellow-900 border border-yellow-300 dark:border-yellow-700 rounded"></div>
+                            <span>Short Break</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-amber-100 dark:bg-amber-900 border border-amber-300 dark:border-amber-700 rounded"></div>
+                            <span>Tea Break</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-orange-500 rounded"></div>
+                            <span>Current break</span>
                         </div>
                     </div>
                 </CardContent>

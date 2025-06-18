@@ -4,7 +4,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Calendar, MapPin, UserCheck, User, Edit, Plus } from 'lucide-react';
+import { injectUniversalBreaks, isBreakEntry, BreakEntry } from '@/lib/utils';
+import { Clock, Calendar, MapPin, UserCheck, User, Edit, Plus, UtensilsCrossed } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
 
@@ -28,6 +29,16 @@ interface TimetableProps {
     isAdminMode?: boolean;
 }
 
+// Break styling for admin view
+const breakColors = {
+    'Lunch Break': {
+        bg: 'bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900',
+        text: 'text-green-900 dark:text-green-100',
+        border: 'border-green-200 dark:border-green-800',
+        icon: UtensilsCrossed
+    }
+}
+
 const Timetable: React.FC<TimetableProps> = ({
     timetableData,
     onMarkAttendance,
@@ -38,6 +49,19 @@ const Timetable: React.FC<TimetableProps> = ({
     const { user } = useAuth();
     const { toast } = useToast();
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [enhancedTimetableData, setEnhancedTimetableData] = useState<(TimetableEntry | BreakEntry)[]>([]);
+
+    // Inject universal breaks into the timetable data
+    useEffect(() => {
+        const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        // Transform timetable data to match the expected interface for injectUniversalBreaks
+        const transformedData = timetableData.map(entry => ({
+            ...entry,
+            id: entry.timetable_id // Map timetable_id to id for compatibility
+        }));
+        const dataWithBreaks = injectUniversalBreaks(transformedData, weekdays);
+        setEnhancedTimetableData(dataWithBreaks);
+    }, [timetableData]);
 
     // Update current time every minute
     useEffect(() => {
@@ -76,8 +100,8 @@ const Timetable: React.FC<TimetableProps> = ({
         return currentDay === classDay;
     };
 
-    // Helper function to check if an hour slot is occupied by a class
-    const isHourSlotOccupied = (day: string, hourSlot: string, entry: TimetableEntry) => {
+    // Helper function to check if an hour slot is occupied by a class or break
+    const isHourSlotOccupied = (day: string, hourSlot: string, entry: TimetableEntry | BreakEntry) => {
         if (entry.day !== day) return false;
 
         const slotHour = parseInt(hourSlot.split(':')[0]);
@@ -85,36 +109,48 @@ const Timetable: React.FC<TimetableProps> = ({
         const endHour = parseInt(entry.end_time.split(':')[0]);
         const endMinute = parseInt(entry.end_time.split(':')[1]);
 
-        // If class ends at exactly the hour (e.g., 10:00), don't include that hour
+        // If class/break ends at exactly the hour (e.g., 10:00), don't include that hour
         const actualEndHour = endMinute === 0 ? endHour - 1 : endHour;
 
         return slotHour >= startHour && slotHour <= actualEndHour;
     };
 
-    // Get the class entry for a specific day and hour slot
-    const getClassForSlot = (day: string, hourSlot: string) => {
-        return timetableData.find(entry => isHourSlotOccupied(day, hourSlot, entry));
+    // Get the entry (class or break) for a specific day and hour slot
+    const getEntryForSlot = (day: string, hourSlot: string) => {
+        return enhancedTimetableData.find(entry => isHourSlotOccupied(day, hourSlot, entry));
     };
 
-    // Check if faculty can mark attendance for a specific class
-    const canMarkAttendance = (entry: TimetableEntry) => {
+    // Check if faculty can mark attendance for a specific class (not applicable to breaks)
+    const canMarkAttendance = (entry: TimetableEntry | BreakEntry) => {
+        if (isBreakEntry(entry)) return false; // Can't mark attendance for breaks
+        const classEntry = entry as TimetableEntry;
         if (user?.role !== 'faculty') return false;
-        if (user?.id !== entry.faculty_id) return false;
-        if (!isCurrentDay(entry.day)) return false;
-        if (!isCurrentTimeInSlot(entry.start_time, entry.end_time)) return false;
+        if (user?.id !== classEntry.faculty_id) return false;
+        if (!isCurrentDay(classEntry.day)) return false;
+        if (!isCurrentTimeInSlot(classEntry.start_time, classEntry.end_time)) return false;
         return true;
     };
 
-    // Handle clicking on an occupied cell (edit entry) - optimized with useCallback
-    const handleCellClick = useCallback((entry: TimetableEntry) => {
+    // Handle clicking on an occupied cell (edit entry) - only for regular classes
+    const handleCellClick = useCallback((entry: TimetableEntry | BreakEntry) => {
+        if (isBreakEntry(entry)) {
+            // Handle break entry click - show break info
+            toast({
+                title: entry.break_name,
+                description: `${entry.room} | ${formatTime(entry.start_time)} - ${formatTime(entry.end_time)}`,
+            });
+            return;
+        }
+
+        const classEntry = entry as TimetableEntry;
         if (isAdminMode && onEditEntry) {
-            console.log('Cell clicked - editing entry:', entry);
-            onEditEntry(entry);
+            console.log('Cell clicked - editing entry:', classEntry);
+            onEditEntry(classEntry);
         } else if (!isAdminMode) {
             // Show entry details for non-admin users
             toast({
-                title: entry.course_name,
-                description: `${entry.room} | ${formatTime(entry.start_time)} - ${formatTime(entry.end_time)}${entry.faculty_name ? ` | ${entry.faculty_name}` : ''}`,
+                title: classEntry.course_name,
+                description: `${classEntry.room} | ${formatTime(classEntry.start_time)} - ${formatTime(classEntry.end_time)}${classEntry.faculty_name ? ` | ${classEntry.faculty_name}` : ''}`,
             });
         }
     }, [isAdminMode, onEditEntry, toast]);
@@ -250,70 +286,100 @@ const Timetable: React.FC<TimetableProps> = ({
 
                                         {/* Day columns */}
                                         {weekdays.map(day => {
-                                            const classEntry = getClassForSlot(day, hourSlot);
+                                            const entry = getEntryForSlot(day, hourSlot);
                                             const isCurrentCell = isCurrentHour && isCurrentDay(day);
 
-                                            if (classEntry) {
-                                                const facultyColorClass = getFacultyColor(classEntry.faculty_id);
-                                                const canMark = canMarkAttendance(classEntry);
+                                            if (entry) {
+                                                if (isBreakEntry(entry)) {
+                                                    // Render break entry
+                                                    const breakStyle = breakColors[entry.break_name as keyof typeof breakColors] || breakColors['Lunch Break']
+                                                    const BreakIcon = breakStyle.icon
 
-                                                return (
-                                                    <div
-                                                        key={`${day}-${hourSlot}`}
-                                                        className={`p-2 border-2 rounded-lg transition-colors hover:shadow-sm cursor-pointer relative ${facultyColorClass} ${isCurrentCell ? 'ring-2 ring-green-400 dark:ring-green-600' : ''
-                                                            } ${isAdminMode ? 'hover:opacity-80' : ''}`}
-                                                        title={`${classEntry.course_name} - ${classEntry.room} (${formatTime(classEntry.start_time)} - ${formatTime(classEntry.end_time)})${isAdminMode ? ' - Click to edit' : ''}`}
-                                                        onClick={() => handleCellClick(classEntry)}
-                                                    >
-                                                        {/* Admin edit indicator */}
-                                                        {isAdminMode && (
-                                                            <div className="absolute top-1 right-1 opacity-60">
-                                                                <Edit className="h-3 w-3 text-gray-600" />
-                                                            </div>
-                                                        )}
-
-                                                        {/* Attendance status indicator */}
-                                                        {classEntry.attendance_marked && (
-                                                            <div className="absolute top-1 left-1">
-                                                                <div className="w-2 h-2 bg-green-500 rounded-full" title="Attendance marked"></div>
-                                                            </div>
-                                                        )}
-
-                                                        <div className="space-y-1">
-                                                            <div className="font-semibold text-xs leading-tight">
-                                                                {classEntry.course_name}
-                                                            </div>
-                                                            <div className="flex items-center gap-1 text-xs opacity-80">
-                                                                <MapPin className="h-2.5 w-2.5" />
-                                                                {classEntry.room}
-                                                            </div>
-                                                            {classEntry.faculty_name && (
+                                                    return (
+                                                        <div
+                                                            key={`${day}-${hourSlot}`}
+                                                            className={`p-2 border-2 rounded-lg transition-colors cursor-pointer relative ${breakStyle.bg} ${breakStyle.border} ${breakStyle.text} ${isCurrentCell ? 'ring-2 ring-orange-400 dark:ring-orange-600' : ''}`}
+                                                            title={`${entry.break_name} - ${entry.room} (${formatTime(entry.start_time)} - ${formatTime(entry.end_time)})`}
+                                                            onClick={() => handleCellClick(entry)}
+                                                        >
+                                                            <div className="space-y-1">
+                                                                <div className="font-semibold text-xs leading-tight flex items-center gap-1">
+                                                                    <BreakIcon className="h-3 w-3" />
+                                                                    {entry.break_name}
+                                                                </div>
                                                                 <div className="flex items-center gap-1 text-xs opacity-80">
-                                                                    <User className="h-2.5 w-2.5" />
-                                                                    {classEntry.faculty_name}
+                                                                    <MapPin className="h-2.5 w-2.5" />
+                                                                    {entry.room}
+                                                                </div>
+                                                                <div className="text-xs opacity-70">
+                                                                    {formatTime(entry.start_time)} - {formatTime(entry.end_time)}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                } else {
+                                                    // Render regular class entry
+                                                    const classEntry = entry as TimetableEntry;
+                                                    const facultyColorClass = getFacultyColor(classEntry.faculty_id);
+                                                    const canMark = canMarkAttendance(classEntry);
+
+                                                    return (
+                                                        <div
+                                                            key={`${day}-${hourSlot}`}
+                                                            className={`p-2 border-2 rounded-lg transition-colors hover:shadow-sm cursor-pointer relative ${facultyColorClass} ${isCurrentCell ? 'ring-2 ring-green-400 dark:ring-green-600' : ''} ${isAdminMode ? 'hover:opacity-80' : ''}`}
+                                                            title={`${classEntry.course_name} - ${classEntry.room} (${formatTime(classEntry.start_time)} - ${formatTime(classEntry.end_time)})${isAdminMode ? ' - Click to edit' : ''}`}
+                                                            onClick={() => handleCellClick(classEntry)}
+                                                        >
+                                                            {/* Admin edit indicator */}
+                                                            {isAdminMode && (
+                                                                <div className="absolute top-1 right-1 opacity-60">
+                                                                    <Edit className="h-3 w-3 text-gray-600" />
                                                                 </div>
                                                             )}
-                                                            <div className="text-xs opacity-70">
-                                                                {formatTime(classEntry.start_time)} - {formatTime(classEntry.end_time)}
-                                                            </div>
 
-                                                            {canMark && !isAdminMode && (
-                                                                <Button
-                                                                    size="sm"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleMarkAttendance(classEntry.timetable_id);
-                                                                    }}
-                                                                    className="w-full text-xs h-6 mt-1"
-                                                                    variant="secondary"
-                                                                >
-                                                                    <UserCheck className="h-2.5 w-2.5 mr-1" />
-                                                                    Mark
-                                                                </Button>
+                                                            {/* Attendance status indicator */}
+                                                            {classEntry.attendance_marked && (
+                                                                <div className="absolute top-1 left-1">
+                                                                    <div className="w-2 h-2 bg-green-500 rounded-full" title="Attendance marked"></div>
+                                                                </div>
                                                             )}
+
+                                                            <div className="space-y-1">
+                                                                <div className="font-semibold text-xs leading-tight">
+                                                                    {classEntry.course_name}
+                                                                </div>
+                                                                <div className="flex items-center gap-1 text-xs opacity-80">
+                                                                    <MapPin className="h-2.5 w-2.5" />
+                                                                    {classEntry.room}
+                                                                </div>
+                                                                {classEntry.faculty_name && (
+                                                                    <div className="flex items-center gap-1 text-xs opacity-80">
+                                                                        <User className="h-2.5 w-2.5" />
+                                                                        {classEntry.faculty_name}
+                                                                    </div>
+                                                                )}
+                                                                <div className="text-xs opacity-70">
+                                                                    {formatTime(classEntry.start_time)} - {formatTime(classEntry.end_time)}
+                                                                </div>
+
+                                                                {canMark && !isAdminMode && (
+                                                                    <Button
+                                                                        size="sm"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleMarkAttendance(classEntry.timetable_id);
+                                                                        }}
+                                                                        className="w-full text-xs h-6 mt-1"
+                                                                        variant="secondary"
+                                                                    >
+                                                                        <UserCheck className="h-2.5 w-2.5 mr-1" />
+                                                                        Mark
+                                                                    </Button>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                );
+                                                    )
+                                                }
                                             }
 
                                             return (
@@ -374,19 +440,19 @@ const Timetable: React.FC<TimetableProps> = ({
                                         <CardContent>
                                             <div className="grid grid-cols-3 gap-2">
                                                 {timeSlots.map(hourSlot => {
-                                                    const classEntry = getClassForSlot(day, hourSlot);
+                                                    const entry = getEntryForSlot(day, hourSlot);
                                                     const isCurrentHour = isCurrentTimeSlot(hourSlot);
 
-                                                    if (classEntry) {
-                                                        const facultyColorClass = getFacultyColor(classEntry.faculty_id);
-                                                        const canMark = canMarkAttendance(classEntry);
+                                                    if (entry) {
+                                                        const facultyColorClass = getFacultyColor(entry.faculty_id);
+                                                        const canMark = canMarkAttendance(entry);
 
                                                         return (
                                                             <div
                                                                 key={`${day}-${hourSlot}`}
                                                                 className={`p-2 border-2 rounded-lg cursor-pointer relative ${facultyColorClass} ${isCurrentHour && isToday ? 'ring-2 ring-green-400 dark:ring-green-600' : ''
                                                                     } ${isAdminMode ? 'hover:opacity-80' : ''}`}
-                                                                onClick={() => handleCellClick(classEntry)}
+                                                                onClick={() => handleCellClick(entry)}
                                                             >
                                                                 {/* Admin edit indicator */}
                                                                 {isAdminMode && (
@@ -396,7 +462,7 @@ const Timetable: React.FC<TimetableProps> = ({
                                                                 )}
 
                                                                 {/* Attendance status indicator */}
-                                                                {classEntry.attendance_marked && (
+                                                                {entry.attendance_marked && (
                                                                     <div className="absolute top-1 left-1">
                                                                         <div className="w-2 h-2 bg-green-500 rounded-full" title="Attendance marked"></div>
                                                                     </div>
@@ -407,17 +473,17 @@ const Timetable: React.FC<TimetableProps> = ({
                                                                         {formatHourSlot(hourSlot)}
                                                                     </div>
                                                                     <div className="font-semibold text-xs">
-                                                                        {classEntry.course_name}
+                                                                        {entry.course_name}
                                                                     </div>
                                                                     <div className="text-xs opacity-80">
-                                                                        {classEntry.room}
+                                                                        {entry.room}
                                                                     </div>
                                                                     {canMark && !isAdminMode && (
                                                                         <Button
                                                                             size="sm"
                                                                             onClick={(e) => {
                                                                                 e.stopPropagation();
-                                                                                handleMarkAttendance(classEntry.timetable_id);
+                                                                                handleMarkAttendance(entry.timetable_id);
                                                                             }}
                                                                             className="w-full text-xs h-6"
                                                                             variant="secondary"

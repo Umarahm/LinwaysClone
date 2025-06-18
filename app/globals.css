@@ -715,10 +715,10 @@ body {
 }
 
 .toast-success {
-  background: linear-gradient(135deg, #065f46, #047857) !important;
-  border: 1px solid #064e3b !important;
+  background: #13f043 !important;
+  border: 1px solid #13f043 !important;
   color: white !important;
-  box-shadow: 0 10px 25px rgba(6, 95, 70, 0.4) !important;
+  box-shadow: 0 10px 25px rgba(19, 240, 67, 0.4) !important;
 }
 
 .toast-warning {

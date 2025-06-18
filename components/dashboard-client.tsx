@@ -13,6 +13,7 @@ import {
   Settings,
   TrendingUp,
   User,
+  UserCog,
   Users,
 } from "lucide-react"
 import { StudentDashboard } from "@/components/student-dashboard"
@@ -28,7 +29,8 @@ import { CourseSelectionForAttendance } from "@/components/faculty/course-select
 import { FacultyTimetableClient } from "@/components/faculty/faculty-timetable-client"
 import { StudentTimetableClient } from "@/components/student/student-timetable-client"
 import { AnnouncementsPage } from "@/components/announcements-page"
-import { UserManagement } from "@/components/admin/user-management"
+import { StudentManagement } from "@/components/admin/student-management"
+import { FacultyManagement } from "@/components/admin/faculty-management"
 import { CourseManagement } from "@/components/admin/course-management"
 import { TimetableSidebar } from "@/components/admin/timetable-sidebar"
 import { EnrollmentManagement } from "@/components/admin/enrollment-management"
@@ -112,7 +114,8 @@ const getNavigationItems = (role: string) => {
   if (role === "admin") {
     return [
       ...baseItems.slice(0, 1),
-      { title: "User Management", icon: Users, key: "user-management" },
+      { title: "Student Management", icon: GraduationCap, key: "student-management" },
+      { title: "Faculty Management", icon: UserCog, key: "faculty-management" },
       { title: "Course Management", icon: BookOpen, key: "course-management" },
       { title: "Timetable Management", icon: Calendar, key: "timetable-management" },
       { title: "Enrollment Management", icon: ClipboardList, key: "enrollment-management" },
@@ -438,10 +441,17 @@ export function DashboardClient({ user: initialUser }: DashboardClientProps) {
           </div>
         )
 
-      case "user-management":
+      case "student-management":
         return (
           <div className="p-6">
-            <UserManagement />
+            <StudentManagement />
+          </div>
+        )
+
+      case "faculty-management":
+        return (
+          <div className="p-6">
+            <FacultyManagement />
           </div>
         )
 

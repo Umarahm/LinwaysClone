@@ -67,7 +67,7 @@ export async function getTimetableByUser(userId?: number, userRole?: string) {
           c.name as course_name,
           c.code as course_code,
           t.faculty_id,
-          f.full_name as faculty_name,
+          COALESCE(f.full_name, 'Faculty TBA') as faculty_name,
           t.day,
           t.start_time,
           t.end_time,
@@ -75,7 +75,7 @@ export async function getTimetableByUser(userId?: number, userRole?: string) {
           t.created_at
         FROM timetable t
         JOIN courses c ON t.course_id = c.id
-        JOIN users f ON t.faculty_id = f.id
+        LEFT JOIN users f ON t.faculty_id = f.id
         ORDER BY 
           CASE t.day
             WHEN 'Monday' THEN 1
@@ -102,7 +102,7 @@ export async function getTimetableByUser(userId?: number, userRole?: string) {
           c.name as course_name,
           c.code as course_code,
           t.faculty_id,
-          f.full_name as faculty_name,
+          COALESCE(f.full_name, 'Faculty TBA') as faculty_name,
           t.day,
           t.start_time,
           t.end_time,
@@ -110,7 +110,7 @@ export async function getTimetableByUser(userId?: number, userRole?: string) {
           t.created_at
         FROM timetable t
         JOIN courses c ON t.course_id = c.id
-        JOIN users f ON t.faculty_id = f.id
+        LEFT JOIN users f ON t.faculty_id = f.id
         WHERE t.faculty_id = ${targetUserId}
         ORDER BY 
           CASE t.day
@@ -138,7 +138,7 @@ export async function getTimetableByUser(userId?: number, userRole?: string) {
           c.name as course_name,
           c.code as course_code,
           t.faculty_id,
-          f.full_name as faculty_name,
+          COALESCE(f.full_name, 'Faculty TBA') as faculty_name,
           t.day,
           t.start_time,
           t.end_time,
@@ -146,7 +146,7 @@ export async function getTimetableByUser(userId?: number, userRole?: string) {
           t.created_at
         FROM timetable t
         JOIN courses c ON t.course_id = c.id
-        JOIN users f ON t.faculty_id = f.id
+        LEFT JOIN users f ON t.faculty_id = f.id
         JOIN enrollments e ON c.id = e.course_id
         WHERE e.student_id = ${targetUserId}
         ORDER BY 

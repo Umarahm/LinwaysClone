@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,8 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Trash2, Edit, Plus, BookOpen, Users, Crown, UserCog } from 'lucide-react';
+import { Trash2, Edit, Plus, BookOpen, Users, Crown, UserCog, Upload, Download, FileSpreadsheet } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import * as XLSX from 'xlsx';
 
 interface Course {
     id: number;
@@ -48,6 +49,7 @@ export function CourseManagement() {
     const [faculty, setFaculty] = useState<Faculty[]>([]);
     const [loading, setLoading] = useState(true);
     const [dialogOpen, setDialogOpen] = useState(false);
+    const [importDialogOpen, setImportDialogOpen] = useState(false);
     const [primaryFacultyDialogOpen, setPrimaryFacultyDialogOpen] = useState(false);
     const [editingCourse, setEditingCourse] = useState<Course | null>(null);
     const [editingPrimaryCourse, setEditingPrimaryCourse] = useState<Course | null>(null);
@@ -59,6 +61,9 @@ export function CourseManagement() {
         faculty_ids: [],
         primary_faculty_id: 0
     });
+    const [importData, setImportData] = useState<any[]>([]);
+    const [isImporting, setIsImporting] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
 
     useEffect(() => {
@@ -350,6 +355,199 @@ export function CourseManagement() {
         );
     };
 
+    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        // Validate file type
+        const allowedTypes = [
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-excel'
+        ];
+
+        if (!allowedTypes.includes(file.type)) {
+            toast({
+                title: 'Invalid File Type',
+                description: 'Please select a valid Excel file (.xlsx or .xls)',
+                variant: 'destructive'
+            });
+            return;
+        }
+
+        // Check file size (limit to 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            toast({
+                title: 'File Too Large',
+                description: 'File size must be less than 10MB',
+                variant: 'destructive'
+            });
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = e.target?.result;
+                const workbook = XLSX.read(data, { type: 'binary' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                if (jsonData.length === 0) {
+                    toast({
+                        title: 'Empty File',
+                        description: 'The Excel file appears to be empty or has no data rows',
+                        variant: 'destructive'
+                    });
+                    return;
+                }
+
+                toast({
+                    title: 'File Loaded',
+                    description: `Found ${jsonData.length} row${jsonData.length > 1 ? 's' : ''} of data`,
+                    duration: 3000,
+                    variant: 'success'
+                });
+
+                setImportData(jsonData);
+                setImportDialogOpen(true);
+            } catch (error) {
+                toast({
+                    title: 'File Parse Error',
+                    description: 'Failed to read Excel file. Please ensure it\'s a valid Excel format.',
+                    variant: 'destructive',
+                    duration: 5000
+                });
+            }
+        };
+
+        reader.onerror = () => {
+            toast({
+                title: 'File Read Error',
+                description: 'Failed to read the file. Please try again.',
+                variant: 'destructive'
+            });
+        };
+
+        reader.readAsBinaryString(file);
+    };
+
+    const handleImport = async () => {
+        if (importData.length === 0) {
+            toast({
+                title: 'Error',
+                description: 'No data to import. Please select a valid Excel file.',
+                variant: 'destructive'
+            });
+            return;
+        }
+
+        setIsImporting(true);
+
+        // Show initial toast
+        toast({
+            title: 'Import Started',
+            description: `Processing ${importData.length} courses...`
+        });
+
+        try {
+            const response = await fetch('/api/admin/courses/import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ courses: importData })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+
+                if (result.imported > 0) {
+                    toast({
+                        title: 'Import Successful',
+                        description: `Successfully imported ${result.imported} course${result.imported > 1 ? 's' : ''}. ${result.errors ? `${result.errors} error${result.errors > 1 ? 's' : ''} occurred.` : 'No errors occurred.'}`,
+                        duration: 5000,
+                        variant: 'success'
+                    });
+                } else {
+                    toast({
+                        title: 'Import Completed with Issues',
+                        description: `No courses were imported. ${result.errors || 0} error${result.errors !== 1 ? 's' : ''} occurred. Please check your data and try again.`,
+                        variant: 'destructive',
+                        duration: 7000
+                    });
+                }
+
+                setImportDialogOpen(false);
+                setImportData([]);
+                fetchCourses();
+            } else if (response.status >= 500) {
+                toast({
+                    title: 'Server Error',
+                    description: 'Internal server error occurred. Please try again later or contact support.',
+                    variant: 'destructive',
+                    duration: 7000
+                });
+            } else {
+                const error = await response.json();
+                toast({
+                    title: 'Import Failed',
+                    description: error.message || 'Failed to import courses. Please check your data format.',
+                    variant: 'destructive',
+                    duration: 7000
+                });
+            }
+        } catch (error) {
+            if (error instanceof TypeError && error.message.includes('fetch')) {
+                toast({
+                    title: 'Connection Error',
+                    description: 'Network error. Please check your internet connection and try again.',
+                    variant: 'destructive',
+                    duration: 7000
+                });
+            } else {
+                toast({
+                    title: 'Unexpected Error',
+                    description: error instanceof Error ? error.message : 'An unexpected error occurred during import.',
+                    variant: 'destructive',
+                    duration: 7000
+                });
+            }
+        } finally {
+            setIsImporting(false);
+        }
+    };
+
+    const downloadTemplate = () => {
+        try {
+            const template = [
+                {
+                    'Course Code': 'CS101',
+                    'Course Name': 'Introduction to Computer Science',
+                    'Description': 'Basic concepts of computer science',
+                    'Credits': 3,
+                    'Primary Faculty Email': 'faculty@example.com'
+                }
+            ];
+
+            const worksheet = XLSX.utils.json_to_sheet(template);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Courses Template');
+            XLSX.writeFile(workbook, 'courses_template.xlsx');
+
+            toast({
+                title: 'Template Downloaded',
+                description: 'Course import template has been downloaded successfully.',
+                duration: 3000,
+                variant: 'success'
+            });
+        } catch (error) {
+            toast({
+                title: 'Download Failed',
+                description: 'Failed to download template. Please try again.',
+                variant: 'destructive'
+            });
+        }
+    };
+
     if (loading) {
         return <div className="flex justify-center py-8">Loading courses...</div>;
     }
@@ -362,156 +560,180 @@ export function CourseManagement() {
                         <BookOpen className="h-5 w-5" />
                         Course Management
                     </CardTitle>
-                    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button
-                                onClick={() => {
-                                    setEditingCourse(null);
-                                    setFormData({
-                                        code: '',
-                                        name: '',
-                                        description: '',
-                                        credits: 3,
-                                        faculty_ids: [],
-                                        primary_faculty_id: 0
-                                    });
-                                }}
-                            >
-                                <Plus className="h-4 w-4 mr-2" />
-                                Add Course
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                            <DialogHeader>
-                                <DialogTitle>
-                                    {editingCourse ? 'Edit Course' : 'Add New Course'}
-                                </DialogTitle>
-                            </DialogHeader>
-                            <form onSubmit={handleSubmit} className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <Label htmlFor="code">Course Code</Label>
-                                        <Input
-                                            id="code"
-                                            value={formData.code}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
-                                            placeholder="e.g., CS101"
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="credits">Credits</Label>
-                                        <Input
-                                            id="credits"
-                                            type="number"
-                                            min="1"
-                                            max="6"
-                                            value={formData.credits}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, credits: parseInt(e.target.value) }))}
-                                            required
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <Label htmlFor="name">Course Name</Label>
-                                    <Input
-                                        id="name"
-                                        value={formData.name}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                                        placeholder="e.g., Introduction to Computer Science"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="description">Description</Label>
-                                    <Textarea
-                                        id="description"
-                                        value={formData.description}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                                        placeholder="Course description..."
-                                        rows={3}
-                                    />
-                                </div>
-
-                                {/* Faculty Assignment Section */}
-                                <div className="space-y-4">
-                                    <Label className="text-base font-semibold flex items-center gap-2">
-                                        <Users className="h-4 w-4" />
-                                        Assign Faculty Members
-                                    </Label>
-
-                                    <div className="border rounded-lg p-4 max-h-60 overflow-y-auto">
-                                        {faculty.map((facultyMember) => (
-                                            <div key={facultyMember.id} className="flex items-center space-x-2 py-2">
-                                                <Checkbox
-                                                    id={`faculty-${facultyMember.id}`}
-                                                    checked={formData.faculty_ids.includes(facultyMember.id)}
-                                                    onCheckedChange={(checked) =>
-                                                        handleFacultyToggle(facultyMember.id, checked as boolean)
-                                                    }
-                                                />
-                                                <Label
-                                                    htmlFor={`faculty-${facultyMember.id}`}
-                                                    className="flex-1 cursor-pointer"
-                                                >
-                                                    <div>
-                                                        <div className="font-medium">{facultyMember.full_name}</div>
-                                                        <div className="text-sm text-muted-foreground">
-                                                            {facultyMember.email} • {facultyMember.department}
-                                                        </div>
-                                                    </div>
-                                                </Label>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    {formData.faculty_ids.length > 0 && (
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={downloadTemplate}
+                        >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download Template
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            <Upload className="h-4 w-4 mr-2" />
+                            Import Excel
+                        </Button>
+                        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button
+                                    onClick={() => {
+                                        setEditingCourse(null);
+                                        setFormData({
+                                            code: '',
+                                            name: '',
+                                            description: '',
+                                            credits: 3,
+                                            faculty_ids: [],
+                                            primary_faculty_id: 0
+                                        });
+                                    }}
+                                >
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add Course
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                                <DialogHeader>
+                                    <DialogTitle>
+                                        {editingCourse ? 'Edit Course' : 'Add New Course'}
+                                    </DialogTitle>
+                                </DialogHeader>
+                                <form onSubmit={handleSubmit} className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <Label htmlFor="primary_faculty" className="flex items-center gap-2">
-                                                <Crown className="h-4 w-4" />
-                                                Primary Faculty
-                                            </Label>
-                                            <Select
-                                                value={formData.primary_faculty_id.toString()}
-                                                onValueChange={(value) =>
-                                                    setFormData(prev => ({ ...prev, primary_faculty_id: parseInt(value) }))
-                                                }
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select primary faculty" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {faculty
-                                                        .filter(f => formData.faculty_ids.includes(f.id))
-                                                        .map((facultyMember) => (
-                                                            <SelectItem
-                                                                key={facultyMember.id}
-                                                                value={facultyMember.id.toString()}
-                                                            >
-                                                                {facultyMember.full_name}
-                                                            </SelectItem>
-                                                        ))
-                                                    }
-                                                </SelectContent>
-                                            </Select>
+                                            <Label htmlFor="code">Course Code</Label>
+                                            <Input
+                                                id="code"
+                                                value={formData.code}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
+                                                placeholder="e.g., CS101"
+                                                required
+                                            />
                                         </div>
-                                    )}
-                                </div>
+                                        <div>
+                                            <Label htmlFor="credits">Credits</Label>
+                                            <Input
+                                                id="credits"
+                                                type="number"
+                                                min="1"
+                                                max="6"
+                                                value={formData.credits}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, credits: parseInt(e.target.value) }))}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="name">Course Name</Label>
+                                        <Input
+                                            id="name"
+                                            value={formData.name}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                                            placeholder="e.g., Introduction to Computer Science"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="description">Description</Label>
+                                        <Textarea
+                                            id="description"
+                                            value={formData.description}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                                            placeholder="Course description..."
+                                            rows={3}
+                                        />
+                                    </div>
 
-                                <div className="flex justify-end space-x-2">
-                                    <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                                        Cancel
-                                    </Button>
-                                    <Button type="submit">
-                                        {editingCourse ? 'Update' : 'Create'} Course
-                                    </Button>
-                                </div>
-                            </form>
-                        </DialogContent>
-                    </Dialog>
+                                    {/* Faculty Assignment Section */}
+                                    <div className="space-y-4">
+                                        <Label className="text-base font-semibold flex items-center gap-2">
+                                            <Users className="h-4 w-4" />
+                                            Assign Faculty Members
+                                        </Label>
+
+                                        <div className="border rounded-lg p-4 max-h-60 overflow-y-auto">
+                                            {faculty.map((facultyMember) => (
+                                                <div key={facultyMember.id} className="flex items-center space-x-2 py-2">
+                                                    <Checkbox
+                                                        id={`faculty-${facultyMember.id}`}
+                                                        checked={formData.faculty_ids.includes(facultyMember.id)}
+                                                        onCheckedChange={(checked) =>
+                                                            handleFacultyToggle(facultyMember.id, checked as boolean)
+                                                        }
+                                                    />
+                                                    <Label
+                                                        htmlFor={`faculty-${facultyMember.id}`}
+                                                        className="flex-1 cursor-pointer"
+                                                    >
+                                                        <div>
+                                                            <div className="font-medium">{facultyMember.full_name}</div>
+                                                            <div className="text-sm text-muted-foreground">
+                                                                {facultyMember.email} • {facultyMember.department}
+                                                            </div>
+                                                        </div>
+                                                    </Label>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {formData.faculty_ids.length > 0 && (
+                                            <div>
+                                                <Label htmlFor="primary_faculty" className="flex items-center gap-2">
+                                                    <Crown className="h-4 w-4" />
+                                                    Primary Faculty
+                                                </Label>
+                                                <Select
+                                                    value={formData.primary_faculty_id.toString()}
+                                                    onValueChange={(value) =>
+                                                        setFormData(prev => ({ ...prev, primary_faculty_id: parseInt(value) }))
+                                                    }
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select primary faculty" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {faculty
+                                                            .filter(f => formData.faculty_ids.includes(f.id))
+                                                            .map((facultyMember) => (
+                                                                <SelectItem
+                                                                    key={facultyMember.id}
+                                                                    value={facultyMember.id.toString()}
+                                                                >
+                                                                    {facultyMember.full_name}
+                                                                </SelectItem>
+                                                            ))
+                                                        }
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex justify-end space-x-2">
+                                        <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                                            Cancel
+                                        </Button>
+                                        <Button type="submit">
+                                            {editingCourse ? 'Update' : 'Create'} Course
+                                        </Button>
+                                    </div>
+                                </form>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
                 </div>
             </CardHeader>
             <CardContent>
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={handleFileUpload}
+                    style={{ display: 'none' }}
+                />
+
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -625,6 +847,58 @@ export function CourseManagement() {
                             </div>
                         </div>
                     )}
+                </DialogContent>
+            </Dialog>
+
+            {/* Import Preview Dialog */}
+            <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <FileSpreadsheet className="h-5 w-5" />
+                            Import Courses Preview
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <p className="text-sm text-muted-foreground">
+                            Preview of {importData.length} courses to be imported:
+                        </p>
+                        <div className="border rounded-lg overflow-hidden">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Course Code</TableHead>
+                                        <TableHead>Course Name</TableHead>
+                                        <TableHead>Credits</TableHead>
+                                        <TableHead>Primary Faculty Email</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {importData.slice(0, 10).map((course, index) => (
+                                        <TableRow key={index}>
+                                            <TableCell>{course['Course Code'] || course.code || 'N/A'}</TableCell>
+                                            <TableCell>{course['Course Name'] || course.name || 'N/A'}</TableCell>
+                                            <TableCell>{course['Credits'] || course.credits || 'N/A'}</TableCell>
+                                            <TableCell>{course['Primary Faculty Email'] || course.primary_faculty_email || 'N/A'}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                        {importData.length > 10 && (
+                            <p className="text-sm text-muted-foreground">
+                                ... and {importData.length - 10} more courses
+                            </p>
+                        )}
+                        <div className="flex justify-end gap-2">
+                            <Button variant="outline" onClick={() => setImportDialogOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button onClick={handleImport} disabled={isImporting}>
+                                {isImporting ? 'Importing...' : `Import ${importData.length} Courses`}
+                            </Button>
+                        </div>
+                    </div>
                 </DialogContent>
             </Dialog>
         </Card>

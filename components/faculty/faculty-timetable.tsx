@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { checkTimetableAttendance } from '@/lib/timetable-actions'
-import { Check, Clock, Users, MapPin, BookOpen, Calendar } from 'lucide-react'
+import { injectUniversalBreaks, isBreakEntry, BreakEntry } from '@/lib/utils'
+import { Check, Clock, Users, MapPin, BookOpen, Calendar, UtensilsCrossed } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 interface TimetableEntry {
@@ -93,16 +94,41 @@ const facultyColors = [
     }
 ]
 
+// Break styling
+const breakColors = {
+    'Lunch Break': {
+        bg: 'bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900',
+        text: 'text-green-900 dark:text-green-100',
+        border: 'border-green-200 dark:border-green-800',
+        icon: UtensilsCrossed
+    }
+}
+
+// Default break style for fallback
+const defaultBreakStyle = {
+    bg: 'bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900',
+    text: 'text-gray-900 dark:text-gray-100',
+    border: 'border-gray-200 dark:border-gray-800',
+    icon: UtensilsCrossed
+}
+
 export function FacultyTimetable({ timetableData, userRole, currentUser }: FacultyTimetableProps) {
     const { toast } = useToast()
     const [attendanceStatus, setAttendanceStatus] = useState<{ [key: number]: boolean }>({})
+    const [enhancedTimetableData, setEnhancedTimetableData] = useState<(TimetableEntry | BreakEntry)[]>([])
+
+    // Inject universal breaks into the timetable data
+    useEffect(() => {
+        const dataWithBreaks = injectUniversalBreaks(timetableData, weekdays)
+        setEnhancedTimetableData(dataWithBreaks)
+    }, [timetableData])
 
     // Check attendance status for all timetable entries on component mount
     useEffect(() => {
         const checkAllAttendance = async () => {
             if (userRole !== 'faculty' || !currentUser) return
 
-            const statusPromises = timetableData.map(async (entry) => {
+            const statusPromises = enhancedTimetableData.map(async (entry) => {
                 try {
                     const result = await checkTimetableAttendance(entry.id)
                     return { id: entry.id, isMarked: result.isMarked }
@@ -122,7 +148,7 @@ export function FacultyTimetable({ timetableData, userRole, currentUser }: Facul
         }
 
         checkAllAttendance()
-    }, [timetableData, userRole, currentUser])
+    }, [enhancedTimetableData, userRole, currentUser])
 
     const handleMarkAttendance = useCallback((entry: TimetableEntry) => {
         if (userRole !== 'faculty' || !currentUser || entry.faculty_id !== currentUser.id) {
@@ -172,7 +198,7 @@ export function FacultyTimetable({ timetableData, userRole, currentUser }: Facul
     }
 
     const renderGridCell = (day: string, timeSlot: string) => {
-        const entries = timetableData.filter(entry => {
+        const entries = enhancedTimetableData.filter(entry => {
             const entryStartHour = parseInt(entry.start_time.split(':')[0])
             const slotHour = parseInt(timeSlot.split(':')[0])
             return entry.day === day && entryStartHour === slotHour
@@ -200,78 +226,121 @@ export function FacultyTimetable({ timetableData, userRole, currentUser }: Facul
         return (
             <div key={`${day}-${timeSlot}`} className="space-y-2">
                 {entries.map((entry) => {
-                    const colorScheme = facultyColors[getFacultyColorIndex(entry.faculty_id)]
-                    const isMarked = attendanceStatus[entry.id] || false
-                    const canMarkAttendance = userRole === 'faculty' &&
-                        currentUser &&
-                        entry.faculty_id === currentUser.id
+                    if (isBreakEntry(entry)) {
+                        // Render break entry
+                        const breakStyle = breakColors[entry.break_name as keyof typeof breakColors] || defaultBreakStyle
+                        const BreakIcon = breakStyle.icon
 
-                    return (
-                        <Card
-                            key={entry.id}
-                            className={`
+                        return (
+                            <Card
+                                key={entry.id}
+                                className={`
+                                    ${breakStyle.bg} ${breakStyle.border} border-2
+                                    transition-all duration-200
+                                    ${isCurrentSlot && isToday ? 'ring-2 ring-orange-400 dark:ring-orange-500 ring-offset-2 dark:ring-offset-background animate-pulse' : ''}
+                                `}
+                            >
+                                <CardContent className="p-3">
+                                    <div className="space-y-2">
+                                        <div className="flex items-start justify-between">
+                                            <div>
+                                                <h4 className={`font-semibold text-sm ${breakStyle.text} flex items-center gap-1`}>
+                                                    <BreakIcon className="w-3 h-3" />
+                                                    {entry.break_name}
+                                                </h4>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-1">
+                                            <div className={`flex items-center gap-1.5 text-xs ${breakStyle.text} opacity-70`}>
+                                                <MapPin className="w-3 h-3" />
+                                                <span>{entry.room}</span>
+                                            </div>
+                                            <div className={`flex items-center gap-1.5 text-xs ${breakStyle.text} opacity-70`}>
+                                                <Clock className="w-3 h-3" />
+                                                <span>{formatTime(entry.start_time)} - {formatTime(entry.end_time)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )
+                    } else {
+                        // Render regular timetable entry
+                        const classEntry = entry as TimetableEntry;
+                        const colorScheme = facultyColors[getFacultyColorIndex(classEntry.faculty_id)]
+                        const isMarked = attendanceStatus[classEntry.id] || false
+                        const canMarkAttendance = userRole === 'faculty' &&
+                            currentUser &&
+                            classEntry.faculty_id === currentUser.id
+
+                        return (
+                            <Card
+                                key={classEntry.id}
+                                className={`
                                 ${colorScheme.bg} ${colorScheme.border} border-2
                                 transition-all duration-200 hover:shadow-md
                                 ${isCurrentSlot && isToday ? 'ring-2 ring-blue-400 dark:ring-blue-500 ring-offset-2 dark:ring-offset-background' : ''}
                                 relative overflow-hidden
                             `}
-                        >
-                            {/* Status indicator */}
-                            {isMarked && (
-                                <div className="absolute top-2 right-2">
-                                    <div className="w-3 h-3 bg-green-500 dark:bg-green-600 rounded-full flex items-center justify-center">
-                                        <Check className="w-2 h-2 text-white" />
-                                    </div>
-                                </div>
-                            )}
-
-                            <CardContent className="p-3">
-                                <div className="space-y-2">
-                                    <div className="flex items-start justify-between">
-                                        <div>
-                                            <h4 className={`font-semibold text-sm ${colorScheme.text}`}>
-                                                {entry.course_code}
-                                            </h4>
-                                            <p className={`text-xs ${colorScheme.text} opacity-80 mt-1 leading-tight`}>
-                                                {entry.course_name}
-                                            </p>
+                            >
+                                {/* Status indicator */}
+                                {isMarked && (
+                                    <div className="absolute top-2 right-2">
+                                        <div className="w-3 h-3 bg-green-500 dark:bg-green-600 rounded-full flex items-center justify-center">
+                                            <Check className="w-2 h-2 text-white" />
                                         </div>
                                     </div>
+                                )}
 
-                                    <div className="space-y-1">
-                                        <div className={`flex items-center gap-1.5 text-xs ${colorScheme.text} opacity-70`}>
-                                            <MapPin className="w-3 h-3" />
-                                            <span>{entry.room}</span>
+                                <CardContent className="p-3">
+                                    <div className="space-y-2">
+                                        <div className="flex items-start justify-between">
+                                            <div>
+                                                <h4 className={`font-semibold text-sm ${colorScheme.text}`}>
+                                                    {classEntry.course_code}
+                                                </h4>
+                                                <p className={`text-xs ${colorScheme.text} opacity-80 mt-1 leading-tight`}>
+                                                    {classEntry.course_name}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div className={`flex items-center gap-1.5 text-xs ${colorScheme.text} opacity-70`}>
-                                            <Clock className="w-3 h-3" />
-                                            <span>{formatTime(entry.start_time)} - {formatTime(entry.end_time)}</span>
+
+                                        <div className="space-y-1">
+                                            <div className={`flex items-center gap-1.5 text-xs ${colorScheme.text} opacity-70`}>
+                                                <MapPin className="w-3 h-3" />
+                                                <span>{classEntry.room}</span>
+                                            </div>
+                                            <div className={`flex items-center gap-1.5 text-xs ${colorScheme.text} opacity-70`}>
+                                                <Clock className="w-3 h-3" />
+                                                <span>{formatTime(classEntry.start_time)} - {formatTime(classEntry.end_time)}</span>
+                                            </div>
                                         </div>
+
+                                        {canMarkAttendance && (
+                                            <div className="mt-3">
+                                                {isMarked ? (
+                                                    <Badge className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800 text-xs">
+                                                        <Check className="w-3 h-3 mr-1" />
+                                                        Marked
+                                                    </Badge>
+                                                ) : (
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={() => handleMarkAttendance(classEntry)}
+                                                        className={`${colorScheme.button} text-xs h-7 px-3`}
+                                                    >
+                                                        <Users className="w-3 h-3 mr-1" />
+                                                        Take Attendance
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
-
-                                    {canMarkAttendance && (
-                                        <div className="mt-3">
-                                            {isMarked ? (
-                                                <Badge className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800 text-xs">
-                                                    <Check className="w-3 h-3 mr-1" />
-                                                    Marked
-                                                </Badge>
-                                            ) : (
-                                                <Button
-                                                    size="sm"
-                                                    onClick={() => handleMarkAttendance(entry)}
-                                                    className={`${colorScheme.button} text-xs h-7 px-3`}
-                                                >
-                                                    <Users className="w-3 h-3 mr-1" />
-                                                    Take Attendance
-                                                </Button>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )
+                                </CardContent>
+                            </Card>
+                        )
+                    }
                 })}
             </div>
         )
@@ -354,7 +423,7 @@ export function FacultyTimetable({ timetableData, userRole, currentUser }: Facul
             {/* Mobile View */}
             <div className="lg:hidden space-y-4">
                 {weekdays.map(day => {
-                    const dayEntries = timetableData.filter(entry => entry.day === day)
+                    const dayEntries = enhancedTimetableData.filter(entry => entry.day === day)
                     if (dayEntries.length === 0) return null
 
                     const today = new Date().toLocaleDateString('en-US', { weekday: 'long' })
@@ -388,69 +457,106 @@ export function FacultyTimetable({ timetableData, userRole, currentUser }: Facul
                                         return (
                                             <div key={timeSlot} className="space-y-2">
                                                 {entries.map(entry => {
-                                                    const colorScheme = facultyColors[getFacultyColorIndex(entry.faculty_id)]
-                                                    const isMarked = attendanceStatus[entry.id] || false
-                                                    const canMarkAttendance = userRole === 'faculty' &&
-                                                        currentUser &&
-                                                        entry.faculty_id === currentUser.id
+                                                    if (isBreakEntry(entry)) {
+                                                        // Render break entry for mobile
+                                                        const breakStyle = breakColors[entry.break_name as keyof typeof breakColors] || defaultBreakStyle
+                                                        const BreakIcon = breakStyle.icon
 
-                                                    return (
-                                                        <Card
-                                                            key={entry.id}
-                                                            className={`${colorScheme.bg} ${colorScheme.border} border-2 relative`}
-                                                        >
-                                                            {isMarked && (
-                                                                <div className="absolute top-2 right-2">
-                                                                    <div className="w-3 h-3 bg-green-500 dark:bg-green-600 rounded-full flex items-center justify-center">
-                                                                        <Check className="w-2 h-2 text-white" />
-                                                                    </div>
-                                                                </div>
-                                                            )}
-
-                                                            <CardContent className="p-4">
-                                                                <div className="space-y-3">
-                                                                    <div>
-                                                                        <h4 className={`font-semibold ${colorScheme.text}`}>
-                                                                            {entry.course_code}
-                                                                        </h4>
-                                                                        <p className={`text-sm ${colorScheme.text} opacity-80`}>
-                                                                            {entry.course_name}
-                                                                        </p>
-                                                                    </div>
-
-                                                                    <div className="space-y-1">
-                                                                        <div className={`flex items-center gap-2 text-sm ${colorScheme.text} opacity-70`}>
-                                                                            <MapPin className="w-4 h-4" />
-                                                                            <span>{entry.room}</span>
+                                                        return (
+                                                            <Card
+                                                                key={entry.id}
+                                                                className={`${breakStyle.bg} ${breakStyle.border} border-2`}
+                                                            >
+                                                                <CardContent className="p-4">
+                                                                    <div className="space-y-3">
+                                                                        <div>
+                                                                            <h4 className={`font-semibold ${breakStyle.text} flex items-center gap-2`}>
+                                                                                <BreakIcon className="w-4 h-4" />
+                                                                                {entry.break_name}
+                                                                            </h4>
                                                                         </div>
-                                                                        <div className={`flex items-center gap-2 text-sm ${colorScheme.text} opacity-70`}>
-                                                                            <Clock className="w-4 h-4" />
-                                                                            <span>{formatTime(entry.start_time)} - {formatTime(entry.end_time)}</span>
+
+                                                                        <div className="space-y-1">
+                                                                            <div className={`flex items-center gap-2 text-sm ${breakStyle.text} opacity-70`}>
+                                                                                <MapPin className="w-4 h-4" />
+                                                                                <span>{entry.room}</span>
+                                                                            </div>
+                                                                            <div className={`flex items-center gap-2 text-sm ${breakStyle.text} opacity-70`}>
+                                                                                <Clock className="w-4 h-4" />
+                                                                                <span>{formatTime(entry.start_time)} - {formatTime(entry.end_time)}</span>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
+                                                                </CardContent>
+                                                            </Card>
+                                                        )
+                                                    } else {
+                                                        // Render regular timetable entry for mobile
+                                                        const classEntry = entry as TimetableEntry
+                                                        const colorScheme = facultyColors[getFacultyColorIndex(classEntry.faculty_id)]
+                                                        const isMarked = attendanceStatus[classEntry.id] || false
+                                                        const canMarkAttendance = userRole === 'faculty' &&
+                                                            currentUser &&
+                                                            classEntry.faculty_id === currentUser.id
 
-                                                                    {canMarkAttendance && (
-                                                                        <div className="pt-2">
-                                                                            {isMarked ? (
-                                                                                <Badge className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800">
-                                                                                    <Check className="w-4 h-4 mr-1" />
-                                                                                    Attendance Marked
-                                                                                </Badge>
-                                                                            ) : (
-                                                                                <Button
-                                                                                    onClick={() => handleMarkAttendance(entry)}
-                                                                                    className={`${colorScheme.button} w-full`}
-                                                                                >
-                                                                                    <Users className="w-4 h-4 mr-2" />
-                                                                                    Take Attendance
-                                                                                </Button>
-                                                                            )}
+                                                        return (
+                                                            <Card
+                                                                key={classEntry.id}
+                                                                className={`${colorScheme.bg} ${colorScheme.border} border-2 relative`}
+                                                            >
+                                                                {isMarked && (
+                                                                    <div className="absolute top-2 right-2">
+                                                                        <div className="w-3 h-3 bg-green-500 dark:bg-green-600 rounded-full flex items-center justify-center">
+                                                                            <Check className="w-2 h-2 text-white" />
                                                                         </div>
-                                                                    )}
-                                                                </div>
-                                                            </CardContent>
-                                                        </Card>
-                                                    )
+                                                                    </div>
+                                                                )}
+
+                                                                <CardContent className="p-4">
+                                                                    <div className="space-y-3">
+                                                                        <div>
+                                                                            <h4 className={`font-semibold ${colorScheme.text}`}>
+                                                                                {classEntry.course_code}
+                                                                            </h4>
+                                                                            <p className={`text-sm ${colorScheme.text} opacity-80`}>
+                                                                                {classEntry.course_name}
+                                                                            </p>
+                                                                        </div>
+
+                                                                        <div className="space-y-1">
+                                                                            <div className={`flex items-center gap-2 text-sm ${colorScheme.text} opacity-70`}>
+                                                                                <MapPin className="w-4 h-4" />
+                                                                                <span>{classEntry.room}</span>
+                                                                            </div>
+                                                                            <div className={`flex items-center gap-2 text-sm ${colorScheme.text} opacity-70`}>
+                                                                                <Clock className="w-4 h-4" />
+                                                                                <span>{formatTime(classEntry.start_time)} - {formatTime(classEntry.end_time)}</span>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {canMarkAttendance && (
+                                                                            <div className="pt-2">
+                                                                                {isMarked ? (
+                                                                                    <Badge className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800">
+                                                                                        <Check className="w-4 h-4 mr-1" />
+                                                                                        Attendance Marked
+                                                                                    </Badge>
+                                                                                ) : (
+                                                                                    <Button
+                                                                                        onClick={() => handleMarkAttendance(classEntry)}
+                                                                                        className={`${colorScheme.button} w-full`}
+                                                                                    >
+                                                                                        <Users className="w-4 h-4 mr-2" />
+                                                                                        Take Attendance
+                                                                                    </Button>
+                                                                                )}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </CardContent>
+                                                            </Card>
+                                                        )
+                                                    }
                                                 })}
                                             </div>
                                         )

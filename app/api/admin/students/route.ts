@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
                 full_name,
                 email,
                 department,
+                roll_no,
                 created_at
             FROM users 
             WHERE role = 'student'
@@ -39,6 +40,7 @@ export async function GET(request: NextRequest) {
                 full_name: student.full_name,
                 email: student.email,
                 department: student.department,
+                roll_no: student.roll_no,
                 created_at: student.created_at
             }))
         };

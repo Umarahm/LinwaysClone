@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { UserManagement } from '@/components/admin/user-management';
+import { StudentManagement } from '@/components/admin/student-management';
+import { FacultyManagement } from '@/components/admin/faculty-management';
 import { CourseManagement } from '@/components/admin/course-management';
-import { Users, BookOpen, Settings, BarChart3 } from 'lucide-react';
+import { Users, BookOpen, Settings, BarChart3, GraduationCap, UserCog } from 'lucide-react';
 
 export default function AdminDashboard() {
     return (
@@ -19,11 +20,15 @@ export default function AdminDashboard() {
                 </div>
             </div>
 
-            <Tabs defaultValue="users" className="space-y-4">
-                <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="users" className="flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        Users
+            <Tabs defaultValue="students" className="space-y-4">
+                <TabsList className="grid w-full grid-cols-5">
+                    <TabsTrigger value="students" className="flex items-center gap-2">
+                        <GraduationCap className="h-4 w-4" />
+                        Students
+                    </TabsTrigger>
+                    <TabsTrigger value="faculty" className="flex items-center gap-2">
+                        <UserCog className="h-4 w-4" />
+                        Faculty
                     </TabsTrigger>
                     <TabsTrigger value="courses" className="flex items-center gap-2">
                         <BookOpen className="h-4 w-4" />
@@ -39,8 +44,12 @@ export default function AdminDashboard() {
                     </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="users" className="space-y-4">
-                    <UserManagement />
+                <TabsContent value="students" className="space-y-4">
+                    <StudentManagement />
+                </TabsContent>
+
+                <TabsContent value="faculty" className="space-y-4">
+                    <FacultyManagement />
                 </TabsContent>
 
                 <TabsContent value="courses" className="space-y-4">

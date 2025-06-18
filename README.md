@@ -110,7 +110,7 @@ node scripts/add-test-students-simple.js
 
 **Via Admin Panel:**
 1. Log in as admin
-2. Go to User Management
+2. Go to Student Management or Faculty Management
 3. Click "Add New User"
 4. Select role as "Student" and specify a password
 

@@ -11,7 +11,8 @@ export async function GET() {
                 id,
                 full_name,
                 email,
-                department
+                department,
+                roll_no
             FROM users 
             WHERE role = 'faculty'
             ORDER BY full_name
