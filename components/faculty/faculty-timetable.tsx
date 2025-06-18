@@ -128,7 +128,10 @@ export function FacultyTimetable({ timetableData, userRole, currentUser }: Facul
         const checkAllAttendance = async () => {
             if (userRole !== 'faculty' || !currentUser) return
 
-            const statusPromises = enhancedTimetableData.map(async (entry) => {
+            // Filter out break entries and only check attendance for actual timetable entries
+            const timetableEntries = enhancedTimetableData.filter((entry): entry is TimetableEntry => !isBreakEntry(entry))
+
+            const statusPromises = timetableEntries.map(async (entry) => {
                 try {
                     const result = await checkTimetableAttendance(entry.id)
                     return { id: entry.id, isMarked: result.isMarked }

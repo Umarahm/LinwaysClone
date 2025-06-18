@@ -39,6 +39,14 @@ const breakColors = {
     }
 }
 
+// Default break style for unknown breaks
+const defaultBreakStyle = {
+    bg: 'bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900',
+    text: 'text-gray-900 dark:text-gray-100',
+    border: 'border-gray-200 dark:border-gray-800',
+    icon: Clock
+}
+
 const Timetable: React.FC<TimetableProps> = ({
     timetableData,
     onMarkAttendance,
@@ -444,15 +452,44 @@ const Timetable: React.FC<TimetableProps> = ({
                                                     const isCurrentHour = isCurrentTimeSlot(hourSlot);
 
                                                     if (entry) {
-                                                        const facultyColorClass = getFacultyColor(entry.faculty_id);
-                                                        const canMark = canMarkAttendance(entry);
+                                                        // Check if this is a break entry or regular timetable entry
+                                                        if (isBreakEntry(entry)) {
+                                                            // Handle break entry in mobile view
+                                                            const breakStyle = breakColors[entry.break_name as keyof typeof breakColors] || defaultBreakStyle
+                                                            const BreakIcon = breakStyle.icon
+
+                                                            return (
+                                                                <div
+                                                                    key={`${day}-${hourSlot}`}
+                                                                    className={`p-2 border-2 rounded-lg ${breakStyle.bg} ${breakStyle.border} ${isCurrentHour && isToday ? 'ring-2 ring-orange-400 dark:ring-orange-600' : ''}`}
+                                                                >
+                                                                    <div className="space-y-1">
+                                                                        <div className="text-xs font-medium opacity-70">
+                                                                            {formatHourSlot(hourSlot)}
+                                                                        </div>
+                                                                        <div className={`font-semibold text-xs ${breakStyle.text} flex items-center gap-1`}>
+                                                                            <BreakIcon className="w-3 h-3" />
+                                                                            {entry.break_name}
+                                                                        </div>
+                                                                        <div className={`text-xs ${breakStyle.text} opacity-80`}>
+                                                                            {entry.room}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        }
+
+                                                        // Handle regular timetable entry
+                                                        const timetableEntry = entry as TimetableEntry;
+                                                        const facultyColorClass = getFacultyColor(timetableEntry.faculty_id);
+                                                        const canMark = canMarkAttendance(timetableEntry);
 
                                                         return (
                                                             <div
                                                                 key={`${day}-${hourSlot}`}
                                                                 className={`p-2 border-2 rounded-lg cursor-pointer relative ${facultyColorClass} ${isCurrentHour && isToday ? 'ring-2 ring-green-400 dark:ring-green-600' : ''
                                                                     } ${isAdminMode ? 'hover:opacity-80' : ''}`}
-                                                                onClick={() => handleCellClick(entry)}
+                                                                onClick={() => handleCellClick(timetableEntry)}
                                                             >
                                                                 {/* Admin edit indicator */}
                                                                 {isAdminMode && (
@@ -462,7 +499,7 @@ const Timetable: React.FC<TimetableProps> = ({
                                                                 )}
 
                                                                 {/* Attendance status indicator */}
-                                                                {entry.attendance_marked && (
+                                                                {timetableEntry.attendance_marked && (
                                                                     <div className="absolute top-1 left-1">
                                                                         <div className="w-2 h-2 bg-green-500 rounded-full" title="Attendance marked"></div>
                                                                     </div>
@@ -473,17 +510,17 @@ const Timetable: React.FC<TimetableProps> = ({
                                                                         {formatHourSlot(hourSlot)}
                                                                     </div>
                                                                     <div className="font-semibold text-xs">
-                                                                        {entry.course_name}
+                                                                        {timetableEntry.course_name}
                                                                     </div>
                                                                     <div className="text-xs opacity-80">
-                                                                        {entry.room}
+                                                                        {timetableEntry.room}
                                                                     </div>
                                                                     {canMark && !isAdminMode && (
                                                                         <Button
                                                                             size="sm"
                                                                             onClick={(e) => {
                                                                                 e.stopPropagation();
-                                                                                handleMarkAttendance(entry.timetable_id);
+                                                                                handleMarkAttendance(timetableEntry.timetable_id);
                                                                             }}
                                                                             className="w-full text-xs h-6"
                                                                             variant="secondary"
