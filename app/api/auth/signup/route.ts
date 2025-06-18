@@ -30,7 +30,7 @@ function validatePassword(password: string): { isValid: boolean; message?: strin
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, fullName, role, department } = await request.json()
+    const { email, password, fullName, role, department, rollNo } = await request.json()
 
     // Validate input
     if (!email || !password || !fullName || !role || !department) {
@@ -57,10 +57,24 @@ export async function POST(request: NextRequest) {
 
     const hashedPassword = await hashPassword(password)
 
+    // Generate roll number if not provided
+    let finalRollNo = rollNo;
+    if (!finalRollNo) {
+      // Get the next available ID to generate roll number
+      const maxId = await safeQuery(
+        () => sql`SELECT COALESCE(MAX(id), 0) + 1 as next_id FROM users`,
+        "Failed to get next user ID"
+      );
+      const nextId = maxId[0].next_id;
+      finalRollNo = role === 'student' ? `STU${String(nextId).padStart(4, '0')}` :
+        role === 'faculty' ? `FAC${String(nextId).padStart(4, '0')}` :
+          `USR${String(nextId).padStart(4, '0')}`;
+    }
+
     await safeQuery(
       () => sql`
-        INSERT INTO users (email, password_hash, full_name, role, department)
-        VALUES (${email.toLowerCase()}, ${hashedPassword}, ${fullName}, ${role}, ${department})
+        INSERT INTO users (email, password_hash, full_name, role, department, roll_no)
+        VALUES (${email.toLowerCase()}, ${hashedPassword}, ${fullName}, ${role}, ${department}, ${finalRollNo})
       `,
       "Failed to create user account",
     )

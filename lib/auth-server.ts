@@ -8,6 +8,7 @@ interface User {
     fullName: string
     role: string
     department: string
+    rollNo?: string
 }
 
 export async function getCurrentUserServer(): Promise<User | null> {
@@ -34,7 +35,7 @@ export async function getCurrentUserServer(): Promise<User | null> {
 
         // Verify user still exists in database
         const users = await sql`
-      SELECT id, email, full_name, role, department
+      SELECT id, email, full_name, role, department, roll_no
       FROM users 
       WHERE id = ${userData.id}
     `
@@ -52,7 +53,8 @@ export async function getCurrentUserServer(): Promise<User | null> {
             email: user.email,
             fullName: user.full_name,
             role: user.role,
-            department: user.department
+            department: user.department,
+            rollNo: user.roll_no
         }
 
     } catch (error) {
@@ -88,7 +90,7 @@ export async function getCurrentUserFromRequest(request?: NextRequest): Promise<
 
         // Verify user still exists in database
         const users = await sql`
-      SELECT id, email, full_name, role, department
+      SELECT id, email, full_name, role, department, roll_no
       FROM users 
       WHERE id = ${userData.id}
     `
@@ -104,7 +106,8 @@ export async function getCurrentUserFromRequest(request?: NextRequest): Promise<
             email: user.email,
             fullName: user.full_name,
             role: user.role,
-            department: user.department
+            department: user.department,
+            rollNo: user.roll_no
         }
 
     } catch (error) {

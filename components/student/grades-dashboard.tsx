@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { TrendingUp, Award, BookOpen, Target } from "lucide-react"
+import { TrendingUp, Award, BookOpen, Target, Loader2, RefreshCw } from "lucide-react"
 
 import {
     Table,
@@ -14,6 +14,8 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { Button } from "@/components/ui/button"
+import { useToast } from "@/hooks/use-toast"
 
 interface GradeRecord {
     id: number
@@ -26,6 +28,7 @@ interface GradeRecord {
     feedback: string
     submittedAt: string
     gradedAt: string
+    facultyName: string
 }
 
 interface CourseGPA {
@@ -38,134 +41,63 @@ interface CourseGPA {
     gpaPoints: number
 }
 
+interface GradeSummary {
+    totalGradedAssignments: number
+    totalCourses: number
+    totalCredits: number
+    averageGrade: number
+}
+
 export function GradesDashboard() {
+    const { toast } = useToast()
     const [gradeRecords, setGradeRecords] = React.useState<GradeRecord[]>([])
     const [courseGPAs, setCourseGPAs] = React.useState<CourseGPA[]>([])
     const [overallGPA, setOverallGPA] = React.useState(0)
+    const [summary, setSummary] = React.useState<GradeSummary>({
+        totalGradedAssignments: 0,
+        totalCourses: 0,
+        totalCredits: 0,
+        averageGrade: 0
+    })
+    const [loading, setLoading] = React.useState(true)
+    const [error, setError] = React.useState<string | null>(null)
 
-    // Mock data - replace with actual API calls
+    const fetchGrades = async () => {
+        try {
+            setLoading(true)
+            setError(null)
+
+            const response = await fetch('/api/student/grades')
+            const data = await response.json()
+
+            if (data.success) {
+                setGradeRecords(data.grades || [])
+                setCourseGPAs(data.courseGPAs || [])
+                setOverallGPA(data.overallGPA || 0)
+                setSummary(data.summary || {})
+            } else {
+                setError(data.message || 'Failed to fetch grades')
+                toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: data.message || "Failed to fetch grades",
+                })
+            }
+        } catch (error) {
+            console.error('Error fetching grades:', error)
+            setError('Failed to fetch grades. Please try again.')
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Failed to fetch grades. Please try again.",
+            })
+        } finally {
+            setLoading(false)
+        }
+    }
+
     React.useEffect(() => {
-        const mockGrades: GradeRecord[] = [
-            {
-                id: 1,
-                courseCode: "CS201",
-                courseName: "Data Structures & Algorithms",
-                assignmentTitle: "Binary Search Tree Implementation",
-                grade: 85,
-                maxMarks: 100,
-                percentage: 85,
-                feedback: "Good implementation with proper tree operations. Minor improvements needed in deletion logic.",
-                submittedAt: "2024-12-15T10:30:00",
-                gradedAt: "2024-12-20T14:20:00"
-            },
-            {
-                id: 2,
-                courseCode: "CS201",
-                courseName: "Data Structures & Algorithms",
-                assignmentTitle: "Graph Algorithms Quiz",
-                grade: 92,
-                maxMarks: 100,
-                percentage: 92,
-                feedback: "Excellent understanding of BFS and DFS algorithms. Perfect implementation.",
-                submittedAt: "2024-12-10T09:15:00",
-                gradedAt: "2024-12-12T16:45:00"
-            },
-            {
-                id: 3,
-                courseCode: "CS301",
-                courseName: "Database Management Systems",
-                assignmentTitle: "Database Design Project",
-                grade: 142,
-                maxMarks: 150,
-                percentage: 95,
-                feedback: "Outstanding database design with proper normalization. Excellent attention to indexing strategies.",
-                submittedAt: "2024-12-18T16:45:00",
-                gradedAt: "2024-12-22T10:30:00"
-            },
-            {
-                id: 4,
-                courseCode: "CS301",
-                courseName: "Database Management Systems",
-                assignmentTitle: "SQL Queries Assessment",
-                grade: 78,
-                maxMarks: 100,
-                percentage: 78,
-                feedback: "Good understanding of basic queries. Need improvement in complex joins and subqueries.",
-                submittedAt: "2024-12-05T14:20:00",
-                gradedAt: "2024-12-08T11:15:00"
-            },
-            {
-                id: 5,
-                courseCode: "IT401",
-                courseName: "Web Development",
-                assignmentTitle: "React Portfolio Website",
-                grade: 188,
-                maxMarks: 200,
-                percentage: 94,
-                feedback: "Impressive use of modern React features and responsive design. Clean code structure.",
-                submittedAt: "2024-12-20T09:15:00",
-                gradedAt: "2024-12-23T15:30:00"
-            },
-            {
-                id: 6,
-                courseCode: "CS401",
-                courseName: "Machine Learning",
-                assignmentTitle: "Classification Algorithms",
-                grade: 88,
-                maxMarks: 120,
-                percentage: 73,
-                feedback: "Good implementation of multiple algorithms. Analysis could be more detailed.",
-                submittedAt: "2024-12-19T10:15:00",
-                gradedAt: "2024-12-21T13:45:00"
-            }
-        ]
-
-        const mockCourseGPAs: CourseGPA[] = [
-            {
-                courseCode: "CS201",
-                courseName: "Data Structures & Algorithms",
-                credits: 4,
-                averageGrade: 88.5,
-                totalAssignments: 3,
-                completedAssignments: 2,
-                gpaPoints: 3.7
-            },
-            {
-                courseCode: "CS301",
-                courseName: "Database Management Systems",
-                credits: 3,
-                averageGrade: 86.5,
-                totalAssignments: 3,
-                completedAssignments: 2,
-                gpaPoints: 3.6
-            },
-            {
-                courseCode: "IT401",
-                courseName: "Web Development",
-                credits: 3,
-                averageGrade: 94,
-                totalAssignments: 2,
-                completedAssignments: 1,
-                gpaPoints: 4.0
-            },
-            {
-                courseCode: "CS401",
-                courseName: "Machine Learning",
-                credits: 4,
-                averageGrade: 73,
-                totalAssignments: 4,
-                completedAssignments: 1,
-                gpaPoints: 2.8
-            }
-        ]
-
-        setGradeRecords(mockGrades)
-        setCourseGPAs(mockCourseGPAs)
-
-        // Calculate overall GPA
-        const totalCredits = mockCourseGPAs.reduce((sum, course) => sum + course.credits, 0)
-        const weightedGPA = mockCourseGPAs.reduce((sum, course) => sum + (course.gpaPoints * course.credits), 0)
-        setOverallGPA(totalCredits > 0 ? weightedGPA / totalCredits : 0)
+        fetchGrades()
     }, [])
 
     const getGradeColor = (percentage: number) => {
@@ -177,13 +109,17 @@ export function GradesDashboard() {
     }
 
     const getGradeBadge = (percentage: number) => {
-        if (percentage >= 90) return { label: 'A+', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' }
-        if (percentage >= 85) return { label: 'A', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' }
-        if (percentage >= 80) return { label: 'B+', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' }
-        if (percentage >= 75) return { label: 'B', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' }
-        if (percentage >= 70) return { label: 'C+', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' }
-        if (percentage >= 65) return { label: 'C', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' }
-        if (percentage >= 60) return { label: 'D', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' }
+        if (percentage >= 97) return { label: 'A+', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' }
+        if (percentage >= 93) return { label: 'A', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' }
+        if (percentage >= 90) return { label: 'A-', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' }
+        if (percentage >= 87) return { label: 'B+', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' }
+        if (percentage >= 83) return { label: 'B', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' }
+        if (percentage >= 80) return { label: 'B-', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' }
+        if (percentage >= 77) return { label: 'C+', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' }
+        if (percentage >= 73) return { label: 'C', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' }
+        if (percentage >= 70) return { label: 'C-', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' }
+        if (percentage >= 67) return { label: 'D+', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' }
+        if (percentage >= 65) return { label: 'D', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' }
         return { label: 'F', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' }
     }
 
@@ -194,221 +130,280 @@ export function GradesDashboard() {
         return 'text-red-600 dark:text-red-400'
     }
 
-    const totalAssignments = courseGPAs.reduce((sum, course) => sum + course.totalAssignments, 0)
-    const completedAssignments = gradeRecords.length
-    const averageGrade = gradeRecords.length > 0
-        ? gradeRecords.reduce((sum, record) => sum + record.percentage, 0) / gradeRecords.length
-        : 0
+    const getGPADescription = (gpa: number) => {
+        if (gpa >= 3.7) return 'Excellent'
+        if (gpa >= 3.3) return 'Very Good'
+        if (gpa >= 3.0) return 'Good'
+        if (gpa >= 2.7) return 'Satisfactory'
+        if (gpa >= 2.0) return 'Below Average'
+        return 'Poor'
+    }
+
+    if (loading) {
+        return (
+            <div className="space-y-6 bg-background text-foreground">
+                <div className="flex items-center justify-center p-8">
+                    <Loader2 className="h-8 w-8 animate-spin mr-2" />
+                    <span>Loading your grades...</span>
+                </div>
+            </div>
+        )
+    }
+
+    if (error) {
+        return (
+            <div className="space-y-6 bg-background text-foreground">
+                <Card>
+                    <CardContent className="pt-6">
+                        <div className="text-center">
+                            <p className="text-red-600 mb-4">{error}</p>
+                            <Button onClick={fetchGrades} variant="outline">
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                                Try Again
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        )
+    }
 
     return (
         <div className="space-y-6 bg-background text-foreground">
-            <div>
-                <h2 className="text-3xl font-bold tracking-tight text-foreground">Academic Performance</h2>
-                <p className="text-muted-foreground">
-                    Track your grades, GPA, and academic progress
-                </p>
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h2 className="text-3xl font-bold tracking-tight text-foreground">My Grades</h2>
+                    <p className="text-muted-foreground">
+                        Track your grades, GPA, and academic progress
+                    </p>
+                </div>
+                <Button onClick={fetchGrades} variant="outline" size="sm">
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Refresh
+                </Button>
             </div>
 
-            {/* GPA Summary Card */}
-            <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-border">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-foreground">
-                        <Award className="h-5 w-5" />
-                        GPA Summary
-                    </CardTitle>
-                    <CardDescription className="text-muted-foreground">
-                        Your overall academic performance summary
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid gap-4 md:grid-cols-4">
-                        <div className="text-center">
-                            <div className={`text-4xl font-bold ${getGPAColor(overallGPA)}`}>
-                                {overallGPA.toFixed(2)}
-                            </div>
-                            <p className="text-sm text-muted-foreground">Overall GPA</p>
-                            <div className="text-sm font-medium">
-                                {overallGPA >= 3.5 ? 'Excellent' : overallGPA >= 3.0 ? 'Good' : overallGPA >= 2.5 ? 'Satisfactory' : 'Needs Improvement'}
-                            </div>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-2xl font-bold">{averageGrade.toFixed(1)}%</div>
-                            <p className="text-sm text-muted-foreground">Average Grade</p>
-                            <div className={`text-sm font-medium ${getGradeColor(averageGrade)}`}>
-                                {getGradeBadge(averageGrade).label} Grade
-                            </div>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-2xl font-bold">{completedAssignments}</div>
-                            <p className="text-sm text-muted-foreground">Assignments Graded</p>
-                            <div className="text-sm text-muted-foreground">
-                                of {totalAssignments} total
-                            </div>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-2xl font-bold">{courseGPAs.length}</div>
-                            <p className="text-sm text-muted-foreground">Courses Enrolled</p>
-                            <div className="text-sm text-muted-foreground">
-                                {courseGPAs.reduce((sum, course) => sum + course.credits, 0)} total credits
-                            </div>
-                        </div>
-                    </div>
+            {/* Overview Stats */}
+            <div className="grid gap-4 md:grid-cols-4">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Overall GPA</CardTitle>
+                        <Award className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className={`text-2xl font-bold ${getGPAColor(overallGPA)}`}>{overallGPA.toFixed(2)}</div>
+                        <p className="text-xs text-muted-foreground">
+                            {getGPADescription(overallGPA)}
+                        </p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Average Grade</CardTitle>
+                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{summary.averageGrade}%</div>
+                        <p className="text-xs text-muted-foreground">
+                            Across all courses
+                        </p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Graded Assignments</CardTitle>
+                        <BookOpen className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{summary.totalGradedAssignments}</div>
+                        <p className="text-xs text-muted-foreground">
+                            Assignments completed
+                        </p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Credits</CardTitle>
+                        <Target className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{summary.totalCredits}</div>
+                        <p className="text-xs text-muted-foreground">
+                            From {summary.totalCourses} courses
+                        </p>
+                    </CardContent>
+                </Card>
+            </div>
 
-                    <div className="mt-4">
-                        <div className="flex items-center justify-between text-sm mb-2">
-                            <span>Assignment Completion</span>
-                            <span>{totalAssignments > 0 ? Math.round((completedAssignments / totalAssignments) * 100) : 0}%</span>
-                        </div>
-                        <Progress value={totalAssignments > 0 ? (completedAssignments / totalAssignments) * 100 : 0} className="h-3" />
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Course-wise Performance */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Course Performance</CardTitle>
-                    <CardDescription>
-                        Your performance breakdown by course
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-                        {courseGPAs.map((course) => (
-                            <Card key={course.courseCode} className="border-l-4 border-l-blue-500">
-                                <CardHeader className="pb-3">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <CardTitle className="text-lg">{course.courseCode}</CardTitle>
-                                            <CardDescription className="text-sm">{course.courseName}</CardDescription>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className={`text-xl font-bold ${getGPAColor(course.gpaPoints)}`}>
-                                                {course.gpaPoints.toFixed(1)}
+            {/* Course Performance */}
+            {courseGPAs.length > 0 && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Course Performance</CardTitle>
+                        <CardDescription>
+                            Your performance breakdown by course
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+                            {courseGPAs.map((course) => (
+                                <Card key={course.courseCode} className="border-l-4 border-l-blue-500">
+                                    <CardHeader className="pb-3">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <CardTitle className="text-lg">{course.courseCode}</CardTitle>
+                                                <CardDescription className="text-sm">{course.courseName}</CardDescription>
                                             </div>
-                                            <div className="text-sm text-muted-foreground">GPA</div>
+                                            <div className="text-right">
+                                                <div className={`text-xl font-bold ${getGPAColor(course.gpaPoints)}`}>
+                                                    {course.gpaPoints.toFixed(1)}
+                                                </div>
+                                                <div className="text-sm text-muted-foreground">GPA</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm text-muted-foreground">Average Grade</span>
-                                            <span className={`font-medium ${getGradeColor(course.averageGrade)}`}>
-                                                {course.averageGrade.toFixed(1)}%
-                                            </span>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-muted-foreground">Average Grade</span>
+                                                <span className={`font-medium ${getGradeColor(course.averageGrade)}`}>
+                                                    {course.averageGrade.toFixed(1)}%
+                                                </span>
+                                            </div>
+                                            <Progress value={course.averageGrade} className="h-2" />
+                                            <div className="flex justify-between text-sm text-muted-foreground">
+                                                <span>{course.completedAssignments} / {course.totalAssignments} assignments</span>
+                                                <span>{course.credits} credits</span>
+                                            </div>
                                         </div>
-                                        <Progress value={course.averageGrade} className="h-2" />
-                                        <div className="flex justify-between text-sm text-muted-foreground">
-                                            <span>{course.completedAssignments} / {course.totalAssignments} assignments</span>
-                                            <span>{course.credits} credits</span>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                </CardContent>
-            </Card>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Detailed Grades Table */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Grade Details</CardTitle>
-                    <CardDescription>
-                        Detailed view of all your graded assignments
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Course</TableHead>
-                                <TableHead>Assignment</TableHead>
-                                <TableHead>Grade</TableHead>
-                                <TableHead>Percentage</TableHead>
-                                <TableHead>Feedback</TableHead>
-                                <TableHead className="text-right">Graded Date</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {gradeRecords
-                                .sort((a, b) => new Date(b.gradedAt).getTime() - new Date(a.gradedAt).getTime())
-                                .map((record) => {
-                                    const gradeBadge = getGradeBadge(record.percentage)
+            {gradeRecords.length > 0 ? (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Grade Details</CardTitle>
+                        <CardDescription>
+                            Detailed view of all your graded assignments
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Course</TableHead>
+                                    <TableHead>Assignment</TableHead>
+                                    <TableHead>Grade</TableHead>
+                                    <TableHead>Percentage</TableHead>
+                                    <TableHead>Feedback</TableHead>
+                                    <TableHead className="text-right">Graded Date</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {gradeRecords
+                                    .sort((a, b) => new Date(b.gradedAt).getTime() - new Date(a.gradedAt).getTime())
+                                    .map((record) => {
+                                        const gradeBadge = getGradeBadge(record.percentage)
 
-                                    return (
-                                        <TableRow key={record.id}>
-                                            <TableCell>
-                                                <div>
-                                                    <div className="font-medium">{record.courseCode}</div>
-                                                    <div className="text-sm text-muted-foreground">{record.courseName}</div>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="font-medium">{record.assignmentTitle}</div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-2">
-                                                    <span className={`text-lg font-bold ${getGradeColor(record.percentage)}`}>
-                                                        {record.grade}
-                                                    </span>
-                                                    <span className="text-muted-foreground">/ {record.maxMarks}</span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-2">
-                                                    <span className={`font-medium ${getGradeColor(record.percentage)}`}>
-                                                        {record.percentage.toFixed(1)}%
-                                                    </span>
-                                                    <Badge className={gradeBadge.color}>
-                                                        {gradeBadge.label}
-                                                    </Badge>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="max-w-xs">
-                                                    <p className="text-sm text-muted-foreground line-clamp-2">
-                                                        {record.feedback}
-                                                    </p>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="text-right text-sm text-muted-foreground">
-                                                {new Date(record.gradedAt).toLocaleDateString()}
-                                            </TableCell>
-                                        </TableRow>
-                                    )
-                                })}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+                                        return (
+                                            <TableRow key={record.id}>
+                                                <TableCell>
+                                                    <div>
+                                                        <div className="font-medium">{record.courseCode}</div>
+                                                        <div className="text-sm text-muted-foreground">{record.courseName}</div>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="font-medium">{record.assignmentTitle}</div>
+                                                    <div className="text-sm text-muted-foreground">by {record.facultyName}</div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`text-lg font-bold ${getGradeColor(record.percentage)}`}>
+                                                            {record.grade}
+                                                        </span>
+                                                        <span className="text-muted-foreground">/ {record.maxMarks}</span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`font-medium ${getGradeColor(record.percentage)}`}>
+                                                            {record.percentage.toFixed(1)}%
+                                                        </span>
+                                                        <Badge className={gradeBadge.color}>
+                                                            {gradeBadge.label}
+                                                        </Badge>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="max-w-xs">
+                                                        <p className="text-sm text-muted-foreground line-clamp-2">
+                                                            {record.feedback || "No feedback provided"}
+                                                        </p>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="text-right text-sm text-muted-foreground">
+                                                    {new Date(record.gradedAt).toLocaleDateString()}
+                                                </TableCell>
+                                            </TableRow>
+                                        )
+                                    })}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            ) : (
+                <Card>
+                    <CardContent className="pt-6">
+                        <div className="text-center">
+                            <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                            <h3 className="text-lg font-semibold mb-2">No grades yet</h3>
+                            <p className="text-muted-foreground">
+                                Your graded assignments will appear here once faculty have reviewed your submissions.
+                            </p>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Performance Insights */}
-            <Card className="bg-green-50/80 dark:bg-green-950/20 border-green-200 dark:border-green-800/30">
-                <CardHeader>
-                    <CardTitle className="text-green-800 dark:text-green-200 flex items-center gap-2">
-                        <Target className="h-5 w-5" />
-                        Performance Insights
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid gap-2 text-sm text-green-700 dark:text-green-300">
-                        {overallGPA >= 3.5 && (
-                            <p>🎉 Excellent work! You're maintaining a high GPA. Keep up the great performance!</p>
-                        )}
-                        {overallGPA >= 3.0 && overallGPA < 3.5 && (
-                            <p>👍 Good academic performance! Focus on improving weaker areas to reach excellence.</p>
-                        )}
-                        {overallGPA < 3.0 && (
-                            <p>📚 There's room for improvement. Consider reaching out to instructors for help and study resources.</p>
-                        )}
-                        <p>• Your strongest subject: {courseGPAs.reduce((max, course) => course.gpaPoints > max.gpaPoints ? course : max, courseGPAs[0])?.courseName}</p>
-                        <p>• Focus area: {courseGPAs.reduce((min, course) => course.gpaPoints < min.gpaPoints ? course : min, courseGPAs[0])?.courseName}</p>
-                        <p>• Assignment completion rate: {Math.round((completedAssignments / totalAssignments) * 100)}%</p>
-                    </div>
-                </CardContent>
-            </Card>
+            {gradeRecords.length > 0 && (
+                <Card className="border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/50">
+                    <CardHeader>
+                        <CardTitle className="text-green-800 dark:text-green-200 flex items-center gap-2">
+                            <Target className="h-5 w-5" />
+                            Performance Insights
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid gap-2 text-sm text-green-700 dark:text-green-300">
+                            {overallGPA >= 3.5 && (
+                                <p>🎉 Excellent work! You're maintaining a high GPA. Keep up the great performance!</p>
+                            )}
+                            {overallGPA >= 3.0 && overallGPA < 3.5 && (
+                                <p>👍 Good academic performance! Focus on improving weaker areas to reach excellence.</p>
+                            )}
+                            {overallGPA < 3.0 && (
+                                <p>📚 There's room for improvement. Consider reaching out to instructors for help and study resources.</p>
+                            )}
+                            {courseGPAs.length > 0 && (
+                                <>
+                                    <p>• Your strongest subject: {courseGPAs.reduce((max, course) => course.gpaPoints > max.gpaPoints ? course : max, courseGPAs[0])?.courseName}</p>
+                                    <p>• Focus area: {courseGPAs.reduce((min, course) => course.gpaPoints < min.gpaPoints ? course : min, courseGPAs[0])?.courseName}</p>
+                                </>
+                            )}
+                            <p>• Total assignments graded: {summary.totalGradedAssignments}</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
         </div>
     )
 } 

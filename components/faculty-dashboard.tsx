@@ -112,7 +112,7 @@ export function FacultyDashboard({ user }: FacultyDashboardProps) {
       <div className="max-w-7xl mx-auto relative z-10 pt-6">
         <div className="faculty-glass rounded-3xl p-8 mb-8 faculty-shimmer subtle-wave glow-effect">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div className="space-y-3">
+            <div className="space-y-3 flex-1">
               <div className="flex items-center gap-3">
                 <div className="faculty-floating w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center breathing-glow">
                   <GraduationCap className="w-6 h-6 text-white" />
@@ -316,7 +316,7 @@ export function FacultyDashboard({ user }: FacultyDashboardProps) {
 
             {/* Announcements */}
             <div className="faculty-glass rounded-3xl overflow-hidden glow-effect subtle-wave">
-              <DashboardAnnouncements userRole="faculty" limit={4} />
+              <DashboardAnnouncements userRole="faculty" userEmail={user?.email} limit={4} />
             </div>
           </div>
         </div>

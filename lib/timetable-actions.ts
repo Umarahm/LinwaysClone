@@ -269,6 +269,14 @@ export async function updateTimetableSlot(id: number, data: TimetableFormData) {
       throw new Error("Faculty conflict: Faculty is already assigned to another class at this time")
     }
 
+    // Get original timetable data for change detection
+    const originalTimetable = await sql`
+      SELECT t.*, c.code as course_code, c.name as course_name
+      FROM timetable t
+      JOIN courses c ON t.course_id = c.id
+      WHERE t.id = ${id}
+    `
+
     // Update the timetable entry
     await sql`
       UPDATE timetable 
@@ -280,6 +288,91 @@ export async function updateTimetableSlot(id: number, data: TimetableFormData) {
           room = ${data.room}
       WHERE id = ${id}
     `
+
+    // Send notifications for timetable changes
+    try {
+      if (originalTimetable.length > 0) {
+        const original = originalTimetable[0]
+        const changes = []
+
+        // Check what changed
+        if (original.day !== data.day) {
+          changes.push(`Day changed from ${original.day} to ${data.day}`)
+        }
+        if (original.start_time !== data.start_time || original.end_time !== data.end_time) {
+          changes.push(`Time changed from ${original.start_time}-${original.end_time} to ${data.start_time}-${data.end_time}`)
+        }
+        if (original.room !== data.room) {
+          changes.push(`Room changed from ${original.room} to ${data.room}`)
+        }
+
+        if (changes.length > 0) {
+          // Get enrolled students for notifications
+          const enrolledStudents = await sql`
+            SELECT u.email, u.full_name
+            FROM users u
+            JOIN enrollments e ON u.id = e.student_id
+            WHERE e.course_id = ${data.course_id} AND u.role = 'student'
+          `
+
+          // Get faculty details
+          const facultyDetails = await sql`
+            SELECT email, full_name
+            FROM users
+            WHERE id = ${data.faculty_id} AND role = 'faculty'
+          `
+
+          const changeDescription = changes.join('. ')
+
+          // Send notifications to students
+          const studentNotifications = enrolledStudents.map(async (student: any) => {
+            try {
+              await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/announcements`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  title: `Timetable Updated - ${original.course_code}`,
+                  content: `Your class schedule has been updated for ${original.course_name} (${original.course_code}). ${changeDescription}`,
+                  targetRole: 'student',
+                  targetUserId: student.email,
+                  priority: 'high'
+                })
+              })
+            } catch (error) {
+              console.error('Failed to send timetable notification to student', student.email, error)
+            }
+          })
+
+          // Send notification to faculty
+          if (facultyDetails.length > 0) {
+            studentNotifications.push(
+              (async () => {
+                try {
+                  await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/announcements`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      title: `Timetable Updated - ${original.course_code}`,
+                      content: `The timetable for ${original.course_name} (${original.course_code}) has been updated. ${changeDescription}`,
+                      targetRole: 'faculty',
+                      targetUserId: facultyDetails[0].email,
+                      priority: 'medium'
+                    })
+                  })
+                } catch (error) {
+                  console.error('Failed to send timetable notification to faculty', facultyDetails[0].email, error)
+                }
+              })()
+            )
+          }
+
+          await Promise.all(studentNotifications)
+        }
+      }
+    } catch (error) {
+      console.error('Error sending timetable change notifications:', error)
+      // Don't fail the update if notifications fail
+    }
 
     return { success: true, message: "Timetable slot updated successfully" }
   } catch (error) {
@@ -381,12 +474,28 @@ export async function markTimetableAttendance(timetableId: number) {
 
     // Get all students enrolled in this course
     const enrolledStudents = await sql`
-      SELECT u.id, u.full_name, u.email
+      SELECT u.id, u.full_name, u.email, u.roll_no
       FROM users u
       JOIN enrollments e ON u.id = e.student_id
       WHERE e.course_id = ${entry.course_id} AND u.role = 'student'
-      ORDER BY u.full_name
     `
+
+    // Sort students by roll number (extracting numeric part)
+    enrolledStudents.sort((a, b) => {
+      const getRollNumberValue = (rollNo: string | null) => {
+        if (!rollNo) return 999999;
+        const numericPart = rollNo.replace(/[^0-9]/g, '');
+        return numericPart ? parseInt(numericPart, 10) : 999999;
+      };
+
+      const rollA = getRollNumberValue(a.roll_no);
+      const rollB = getRollNumberValue(b.roll_no);
+
+      if (rollA !== rollB) {
+        return rollA - rollB;
+      }
+      return a.full_name.localeCompare(b.full_name);
+    })
 
     if (enrolledStudents.length === 0) {
       return {

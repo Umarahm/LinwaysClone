@@ -52,15 +52,32 @@ export async function GET(request: NextRequest) {
           a.student_id,
           a.status,
           u.full_name,
-          u.email
+          u.email,
+          u.roll_no
         FROM attendance a
         JOIN users u ON a.student_id = u.id
         WHERE a.course_id = ${courseId} 
         AND a.date = ${date}
-        ORDER BY u.full_name
       `,
             "Failed to fetch attendance"
         )
+
+        // Sort by roll number (extracting numeric part) for consistent ordering
+        attendance.sort((a, b) => {
+            const getRollNumberValue = (rollNo: string | null) => {
+                if (!rollNo) return 999999;
+                const numericPart = rollNo.replace(/[^0-9]/g, '');
+                return numericPart ? parseInt(numericPart, 10) : 999999;
+            };
+
+            const rollA = getRollNumberValue(a.roll_no);
+            const rollB = getRollNumberValue(b.roll_no);
+
+            if (rollA !== rollB) {
+                return rollA - rollB;
+            }
+            return a.full_name.localeCompare(b.full_name);
+        })
 
         return NextResponse.json({
             success: true,

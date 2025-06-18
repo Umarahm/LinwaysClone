@@ -362,7 +362,7 @@ export function FacultyAttendanceMarking({
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                             {students.map((student, index) => {
                                 const isPresent = attendanceData[student.id] === 'present'
-                                const studentRollNo = student.roll_number || `STU${student.id.toString().padStart(4, '0')}`
+                                const studentRollNo = student.roll_number || 'Not Assigned'
 
                                 return (
                                     <div
@@ -412,12 +412,13 @@ export function FacultyAttendanceMarking({
                                                     }`}>
                                                     {student.full_name}
                                                 </h3>
-                                                <p className={`text-sm font-mono ${isPresent
+                                                <div className={`text-sm font-mono flex items-center gap-1 ${isPresent
                                                     ? 'text-green-700 dark:text-green-300'
                                                     : 'text-red-700 dark:text-red-300'
                                                     }`}>
-                                                    Roll: {studentRollNo}
-                                                </p>
+                                                    <span className="text-xs opacity-75">Roll:</span>
+                                                    <span className="font-semibold">{studentRollNo}</span>
+                                                </div>
                                             </div>
 
                                             <div className={`pt-2 border-t ${isPresent

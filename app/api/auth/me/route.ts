@@ -48,13 +48,13 @@ export async function PUT(request: Request) {
     // Handle password change
     if (currentPassword && newPassword) {
       // Verify current password
-      const user = await sql`SELECT password FROM users WHERE id = ${currentUser.id}`
+      const user = await sql`SELECT password_hash FROM users WHERE id = ${currentUser.id}`
 
       if (user.length === 0) {
         return NextResponse.json({ success: false, message: "User not found" }, { status: 404 })
       }
 
-      const validPassword = await bcrypt.compare(currentPassword, user[0].password)
+      const validPassword = await bcrypt.compare(currentPassword, user[0].password_hash)
       if (!validPassword) {
         return NextResponse.json({ success: false, message: "Current password is incorrect" }, { status: 400 })
       }
@@ -78,21 +78,21 @@ export async function PUT(request: Request) {
         UPDATE users 
         SET full_name = ${fullName}, 
             phone_number = ${phoneNumber}, 
-            password = ${hashedNewPassword},
+            password_hash = ${hashedNewPassword},
             avatar = ${avatarPath},
             updated_at = NOW()
         WHERE id = ${currentUser.id}
-        RETURNING id, email, full_name, role, department, phone_number, avatar, created_at, updated_at
+        RETURNING id, email, full_name, role, department, roll_no, phone_number, avatar, created_at, updated_at
       `
     } else if (hashedNewPassword) {
       result = await sql`
         UPDATE users 
         SET full_name = ${fullName}, 
             phone_number = ${phoneNumber}, 
-            password = ${hashedNewPassword},
+            password_hash = ${hashedNewPassword},
             updated_at = NOW()
         WHERE id = ${currentUser.id}
-        RETURNING id, email, full_name, role, department, phone_number, avatar, created_at, updated_at
+        RETURNING id, email, full_name, role, department, roll_no, phone_number, avatar, created_at, updated_at
       `
     } else if (avatarPath) {
       result = await sql`
@@ -102,7 +102,7 @@ export async function PUT(request: Request) {
             avatar = ${avatarPath},
             updated_at = NOW()
         WHERE id = ${currentUser.id}
-        RETURNING id, email, full_name, role, department, phone_number, avatar, created_at, updated_at
+        RETURNING id, email, full_name, role, department, roll_no, phone_number, avatar, created_at, updated_at
       `
     } else {
       result = await sql`
@@ -111,7 +111,7 @@ export async function PUT(request: Request) {
             phone_number = ${phoneNumber}, 
             updated_at = NOW()
         WHERE id = ${currentUser.id}
-        RETURNING id, email, full_name, role, department, phone_number, avatar, created_at, updated_at
+        RETURNING id, email, full_name, role, department, roll_no, phone_number, avatar, created_at, updated_at
       `
     }
 
@@ -126,6 +126,7 @@ export async function PUT(request: Request) {
       fullName: updatedUser.full_name,
       role: updatedUser.role,
       department: updatedUser.department,
+      rollNo: updatedUser.roll_no,
       phoneNumber: updatedUser.phone_number,
       avatar: updatedUser.avatar,
       createdAt: updatedUser.created_at,

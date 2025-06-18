@@ -14,16 +14,20 @@ interface Announcement {
     author_role: string
     recipient: string
     created_at: string
+    target_user_email?: string
+    priority?: string
 }
 
 interface DashboardAnnouncementsProps {
     userRole: string
+    userEmail?: string
     limit?: number
     showTitle?: boolean
 }
 
 export function DashboardAnnouncements({
     userRole,
+    userEmail,
     limit = 3,
     showTitle = true
 }: DashboardAnnouncementsProps) {
@@ -32,11 +36,15 @@ export function DashboardAnnouncements({
 
     React.useEffect(() => {
         fetchAnnouncements()
-    }, [userRole])
+    }, [userRole, userEmail])
 
     const fetchAnnouncements = async () => {
         try {
-            const response = await fetch(`/api/announcements?role=${userRole}`)
+            const params = new URLSearchParams({ role: userRole })
+            if (userEmail) {
+                params.append('userEmail', userEmail)
+            }
+            const response = await fetch(`/api/announcements?${params}`)
             if (response.ok) {
                 const data = await response.json()
                 setAnnouncements(data.announcements || [])
@@ -98,38 +106,61 @@ export function DashboardAnnouncements({
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {limitedAnnouncements.map((announcement) => (
-                            <div key={announcement.id} className="p-4 bg-white/10 rounded-lg border-l-4 border-blue-300 hover:bg-white/15 transition-all duration-300">
-                                <div className="flex items-start justify-between mb-2">
-                                    <h4 className="font-medium text-white text-sm line-clamp-2">
-                                        {announcement.title}
-                                    </h4>
-                                    <Badge
-                                        variant="secondary"
-                                        className="ml-2 text-xs bg-white/20 text-white border-white/30"
-                                    >
-                                        {announcement.recipient === "all"
-                                            ? "All"
-                                            : announcement.recipient === "student"
-                                                ? "Students"
-                                                : "Faculty"}
-                                    </Badge>
-                                </div>
-                                <p className="text-xs text-white/80 mb-3 line-clamp-2">
-                                    {announcement.message}
-                                </p>
-                                <div className="flex items-center justify-between text-xs text-white/70">
-                                    <div className="flex items-center gap-1">
-                                        <User className="w-3 h-3" />
-                                        <span>{announcement.author_name}</span>
+                        {limitedAnnouncements.map((announcement) => {
+                            const isGradeNotification = announcement.title.includes('Assignment Graded')
+                            const isPersonalNotification = announcement.target_user_email === userEmail
+                            const priorityColor = announcement.priority === 'high' ? 'border-red-400' :
+                                announcement.priority === 'urgent' ? 'border-red-500' :
+                                    isGradeNotification ? 'border-green-400' : 'border-blue-300'
+
+                            return (
+                                <div
+                                    key={announcement.id}
+                                    className={`p-4 bg-white/10 rounded-lg border-l-4 ${priorityColor} hover:bg-white/15 transition-all duration-300 ${isPersonalNotification ? 'ring-2 ring-yellow-400/50' : ''}`}
+                                >
+                                    <div className="flex items-start justify-between mb-2">
+                                        <h4 className="font-medium text-white text-sm line-clamp-2">
+                                            {isGradeNotification && "🎓 "}{announcement.title}
+                                        </h4>
+                                        <div className="flex gap-1 ml-2">
+                                            {isPersonalNotification && (
+                                                <Badge className="text-xs bg-yellow-500/20 text-yellow-200 border-yellow-400/30">
+                                                    Personal
+                                                </Badge>
+                                            )}
+                                            {isGradeNotification && (
+                                                <Badge className="text-xs bg-green-500/20 text-green-200 border-green-400/30">
+                                                    Grade
+                                                </Badge>
+                                            )}
+                                            <Badge
+                                                variant="secondary"
+                                                className="text-xs bg-white/20 text-white border-white/30"
+                                            >
+                                                {announcement.recipient === "all"
+                                                    ? "All"
+                                                    : announcement.recipient === "student"
+                                                        ? "Students"
+                                                        : "Faculty"}
+                                            </Badge>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-1">
-                                        <Calendar className="w-3 h-3" />
-                                        <span>{new Date(announcement.created_at).toLocaleDateString()}</span>
+                                    <p className="text-xs text-white/80 mb-3 line-clamp-3">
+                                        {announcement.message}
+                                    </p>
+                                    <div className="flex items-center justify-between text-xs text-white/70">
+                                        <div className="flex items-center gap-1">
+                                            <User className="w-3 h-3" />
+                                            <span>{announcement.author_name}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <Calendar className="w-3 h-3" />
+                                            <span>{new Date(announcement.created_at).toLocaleDateString()}</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            )
+                        })}
                     </div>
                 )}
             </CardContent>

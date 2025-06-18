@@ -169,12 +169,30 @@ export async function getCourseStudents(courseId: number, date?: string, timetab
         u.id,
         u.full_name,
         u.email,
-        CONCAT('STU', LPAD(u.id::text, 4, '0')) as roll_number
+        u.roll_no as roll_number
       FROM users u
       JOIN enrollments e ON u.id = e.student_id
       WHERE e.course_id = ${courseId} AND u.role = 'student'
-      ORDER BY u.full_name
     `
+
+    // Sort students by roll number (extracting numeric part) in JavaScript for better compatibility
+    enrolledStudents.sort((a, b) => {
+      // Extract numeric part from roll numbers
+      const getRollNumberValue = (rollNo: string | null) => {
+        if (!rollNo) return 999999; // Put students without roll numbers at the end
+        const numericPart = rollNo.replace(/[^0-9]/g, '');
+        return numericPart ? parseInt(numericPart, 10) : 999999;
+      };
+
+      const rollA = getRollNumberValue(a.roll_number);
+      const rollB = getRollNumberValue(b.roll_number);
+
+      // Primary sort by roll number, secondary sort by name
+      if (rollA !== rollB) {
+        return rollA - rollB;
+      }
+      return a.full_name.localeCompare(b.full_name);
+    })
 
     if (enrolledStudents.length === 0) {
       return []
@@ -266,6 +284,57 @@ export async function markAttendance(formData: FormData) {
     )
 
     await Promise.all(insertPromises)
+
+    // Send notifications to absent students
+    try {
+      const courseDetails = await sql`
+        SELECT c.code, c.name, u.full_name as faculty_name, u.email as faculty_email
+        FROM courses c
+        JOIN course_faculty cf ON c.id = cf.course_id
+        JOIN users u ON cf.faculty_id = u.id
+        WHERE c.id = ${courseId} AND u.id = ${user.id}
+        LIMIT 1
+      `
+
+      if (courseDetails.length > 0) {
+        const course = courseDetails[0]
+        const absentStudents = attendanceData.filter((record: any) => record.status === 'absent')
+
+        if (absentStudents.length > 0) {
+          // Get student details for absent students
+          const studentIds = absentStudents.map((s: any) => s.studentId)
+          const studentDetails = await sql`
+            SELECT id, email, full_name
+            FROM users
+            WHERE id = ANY(${studentIds}) AND role = 'student'
+          `
+
+          // Send notifications using the announcements API
+          const notificationPromises = studentDetails.map(async (student) => {
+            try {
+              await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/announcements`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  title: `Marked Absent - ${course.code}`,
+                  content: `You were marked absent for ${course.name} (${course.code}) lecture on ${new Date(date).toLocaleDateString()} by ${course.faculty_name}.`,
+                  targetRole: 'student',
+                  targetUserId: student.email,
+                  priority: 'high'
+                })
+              })
+            } catch (error) {
+              console.error('Failed to send absence notification to', student.email, error)
+            }
+          })
+
+          await Promise.all(notificationPromises)
+        }
+      }
+    } catch (error) {
+      console.error('Error sending attendance notifications:', error)
+      // Don't fail the attendance marking if notifications fail
+    }
 
     // Revalidate relevant paths for immediate updates
     revalidatePath('/dashboard')

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Save, Download, FileText, Calendar, User, GraduationCap, RefreshCw, Filter, Search, CheckSquare, Square, Eye, MessageSquare, BarChart3, Users } from "lucide-react"
+import { Save, Download, FileText, Calendar, User, GraduationCap, RefreshCw, Search, CheckSquare, Square, Eye, BarChart3, Users } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -65,13 +65,7 @@ interface GradingStats {
     avgGrade: number
 }
 
-interface BulkGradeData {
-    submissionIds: number[]
-    grade: string
-    feedback: string
-}
-
-export function GradingInterface() {
+export function EnhancedGradingInterface() {
     const { toast } = useToast()
     const [submissions, setSubmissions] = React.useState<Submission[]>([])
     const [assignments, setAssignments] = React.useState<Assignment[]>([])
@@ -81,35 +75,16 @@ export function GradingInterface() {
     const [isLoading, setIsLoading] = React.useState(false)
     const [selectedSubmissions, setSelectedSubmissions] = React.useState<Set<number>>(new Set())
     const [bulkGradeOpen, setBulkGradeOpen] = React.useState(false)
-    const [bulkGradeData, setBulkGradeData] = React.useState<BulkGradeData>({
-        submissionIds: [],
+    const [bulkGradeData, setBulkGradeData] = React.useState({
         grade: "",
         feedback: ""
     })
     const [gradingData, setGradingData] = React.useState<{ [key: number]: { grade: string, feedback: string } }>({})
     const [viewMode, setViewMode] = React.useState<'table' | 'cards'>('table')
-    const [isAutoSaveEnabled, setIsAutoSaveEnabled] = React.useState(false)
-    const [quickGradeMode, setQuickGradeMode] = React.useState(false)
-    const [selectedGradeTemplate, setSelectedGradeTemplate] = React.useState<string>("")
 
     React.useEffect(() => {
         fetchData()
     }, [])
-
-    // Auto-save functionality
-    React.useEffect(() => {
-        if (!isAutoSaveEnabled) return
-
-        const autoSaveTimer = setTimeout(() => {
-            Object.entries(gradingData).forEach(([submissionId, data]) => {
-                if (data.grade && data.grade !== '') {
-                    handleSaveGrade(parseInt(submissionId))
-                }
-            })
-        }, 2000) // Auto-save after 2 seconds of inactivity
-
-        return () => clearTimeout(autoSaveTimer)
-    }, [gradingData, isAutoSaveEnabled])
 
     const fetchData = async () => {
         try {
@@ -150,17 +125,14 @@ export function GradingInterface() {
     const filteredSubmissions = React.useMemo(() => {
         let filtered = submissions
 
-        // Filter by assignment
         if (selectedAssignment && selectedAssignment !== "all") {
             filtered = filtered.filter(s => s.assignmentId === parseInt(selectedAssignment))
         }
 
-        // Filter by status
         if (selectedStatus && selectedStatus !== "all") {
             filtered = filtered.filter(s => s.status === selectedStatus)
         }
 
-        // Filter by search query
         if (searchQuery) {
             const query = searchQuery.toLowerCase()
             filtered = filtered.filter(s =>
@@ -174,120 +146,9 @@ export function GradingInterface() {
         return filtered
     }, [submissions, selectedAssignment, selectedStatus, searchQuery])
 
-    // Keyboard shortcuts
-    React.useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
-            // Ctrl/Cmd + E for export
-            if ((event.ctrlKey || event.metaKey) && event.key === 'e') {
-                event.preventDefault()
-                if (!isLoading && filteredSubmissions.length > 0) {
-                    handleExportGrades()
-                }
-            }
-            // Ctrl/Cmd + A for select all
-            if ((event.ctrlKey || event.metaKey) && event.key === 'a' && event.target instanceof HTMLElement && !event.target.matches('input, textarea')) {
-                event.preventDefault()
-                toggleSelectAll()
-            }
-            // Escape to clear selection
-            if (event.key === 'Escape') {
-                setSelectedSubmissions(new Set())
-                setBulkGradeOpen(false)
-            }
-        }
-
-        document.addEventListener('keydown', handleKeyDown)
-        return () => document.removeEventListener('keydown', handleKeyDown)
-    }, [isLoading, filteredSubmissions.length])
-
-    const handleGradeChange = (submissionId: number, grade: string) => {
-        setGradingData(prev => ({
-            ...prev,
-            [submissionId]: {
-                ...prev[submissionId],
-                grade
-            }
-        }))
-    }
-
-    const handleFeedbackChange = (submissionId: number, feedback: string) => {
-        setGradingData(prev => ({
-            ...prev,
-            [submissionId]: {
-                ...prev[submissionId],
-                feedback
-            }
-        }))
-    }
-
-    const handleSaveGrade = async (submissionId: number) => {
-        const data = gradingData[submissionId]
-        if (!data?.grade) return
-
-        try {
-            setIsLoading(true)
-            const response = await fetch('/api/faculty/submissions/grade', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    submissionId,
-                    grade: parseInt(data.grade),
-                    feedback: data.feedback || ''
-                })
-            })
-
-            const result = await response.json()
-
-            if (result.success) {
-                const submission = submissions.find(s => s.id === submissionId)
-
-                // Send notification to student automatically handled by the grading API
-
-                toast({
-                    title: "Success",
-                    description: "Grade saved and student notified!",
-                })
-
-                // Update local state
-                setSubmissions(prev => prev.map(sub =>
-                    sub.id === submissionId
-                        ? { ...sub, grade: parseInt(data.grade), feedback: data.feedback || '', status: 'graded' as const }
-                        : sub
-                ))
-
-                // Clear the temporary grading data
-                setGradingData(prev => {
-                    const updated = { ...prev }
-                    delete updated[submissionId]
-                    return updated
-                })
-            } else {
-                toast({
-                    variant: "destructive",
-                    title: "Error",
-                    description: result.message || "Failed to save grade",
-                })
-            }
-        } catch (error) {
-            console.error('Grading error:', error)
-            toast({
-                variant: "destructive",
-                title: "Error",
-                description: "Failed to save grade. Please try again.",
-            })
-        } finally {
-            setIsLoading(false)
-        }
-    }
-
     const handleExportGrades = async () => {
         try {
             setIsLoading(true)
-
-            toast({
-                title: "Export Started",
-                description: "Preparing grades for export...",
-            })
 
             const dataToExport = filteredSubmissions.map(submission => ({
                 'Student Name': submission.studentName,
@@ -307,44 +168,42 @@ export function GradingInterface() {
                 toast({
                     variant: "destructive",
                     title: "No Data",
-                    description: "No submissions to export with current filters",
+                    description: "No submissions to export",
                 })
                 return
             }
 
-            // Convert to Excel format (XLSX)
+            // Convert to CSV
             const headers = Object.keys(dataToExport[0])
+            const csvContent = [
+                headers.join(','),
+                ...dataToExport.map(row =>
+                    headers.map(header => {
+                        const value = row[header as keyof typeof row]
+                        return `"${String(value).replace(/"/g, '""')}"`
+                    }).join(',')
+                )
+            ].join('\n')
 
-            // Create Excel workbook structure
-            const worksheetData = [
-                headers, // Header row
-                ...dataToExport.map(row => headers.map(header => row[header as keyof typeof row]))
-            ]
-
-            // Generate Excel file content (simplified XLSX format)
-            const excelContent = generateExcelFile(worksheetData, headers)
+            // Add UTF-8 BOM for Excel compatibility
+            const bom = '\uFEFF'
+            const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' })
 
             // Create and trigger download
-            const blob = new Blob([excelContent], {
-                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            })
             const link = document.createElement('a')
             const url = URL.createObjectURL(blob)
             link.setAttribute('href', url)
-            link.setAttribute('download', `grades_export_${new Date().toISOString().split('T')[0]}.xlsx`)
+            link.setAttribute('download', `grades_export_${new Date().toISOString().split('T')[0]}.csv`)
             link.style.visibility = 'hidden'
             document.body.appendChild(link)
             link.click()
             document.body.removeChild(link)
             URL.revokeObjectURL(url)
 
-            setTimeout(() => {
-                toast({
-                    title: "Export Successful",
-                    description: `Downloaded ${dataToExport.length} records to Excel file`,
-                })
-            }, 500)
-
+            toast({
+                title: "Export Successful",
+                description: `Exported ${dataToExport.length} records to CSV`,
+            })
         } catch (error) {
             console.error('Export error:', error)
             toast({
@@ -375,15 +234,26 @@ export function GradingInterface() {
             )
 
             const results = await Promise.all(promises)
-            const successCount = results.filter(r => r.ok).length
+            const successfulResults = await Promise.all(
+                results.map(async (result, index) => {
+                    if (result.ok) {
+                        return { success: true, index }
+                    } else {
+                        const error = await result.json()
+                        return { success: false, index, error }
+                    }
+                })
+            )
+
+            const successCount = successfulResults.filter(r => r.success).length
 
             if (successCount > 0) {
                 toast({
                     title: "Bulk Grading Complete",
-                    description: `Successfully graded ${successCount} submissions. Students will be notified automatically.`,
+                    description: `Successfully graded ${successCount} out of ${selectedSubmissions.size} submissions`,
                 })
 
-                // Update local state
+                // Update local state for successful grades
                 setSubmissions(prev => prev.map(sub =>
                     selectedSubmissions.has(sub.id)
                         ? { ...sub, grade: parseInt(bulkGradeData.grade), feedback: bulkGradeData.feedback, status: 'graded' as const }
@@ -392,9 +262,16 @@ export function GradingInterface() {
 
                 setBulkGradeOpen(false)
                 setSelectedSubmissions(new Set())
-                setBulkGradeData({ submissionIds: [], grade: "", feedback: "" })
+                setBulkGradeData({ grade: "", feedback: "" })
+            } else {
+                toast({
+                    variant: "destructive",
+                    title: "Bulk Grading Failed",
+                    description: "No submissions were successfully graded",
+                })
             }
         } catch (error) {
+            console.error('Bulk grading error:', error)
             toast({
                 variant: "destructive",
                 title: "Bulk Grading Failed",
@@ -403,6 +280,80 @@ export function GradingInterface() {
         } finally {
             setIsLoading(false)
         }
+    }
+
+    const handleSaveGrade = async (submissionId: number) => {
+        const data = gradingData[submissionId]
+        if (!data?.grade) return
+
+        try {
+            setIsLoading(true)
+            const response = await fetch('/api/faculty/submissions/grade', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    submissionId,
+                    grade: parseInt(data.grade),
+                    feedback: data.feedback || ''
+                })
+            })
+
+            const result = await response.json()
+
+            if (result.success) {
+                toast({
+                    title: "Success",
+                    description: "Grade saved successfully!",
+                })
+
+                setSubmissions(prev => prev.map(sub =>
+                    sub.id === submissionId
+                        ? { ...sub, grade: parseInt(data.grade), feedback: data.feedback || '', status: 'graded' as const }
+                        : sub
+                ))
+
+                setGradingData(prev => {
+                    const updated = { ...prev }
+                    delete updated[submissionId]
+                    return updated
+                })
+            } else {
+                toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: result.message || "Failed to save grade",
+                })
+            }
+        } catch (error) {
+            console.error('Grading error:', error)
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Failed to save grade. Please try again.",
+            })
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const handleGradeChange = (submissionId: number, grade: string) => {
+        setGradingData(prev => ({
+            ...prev,
+            [submissionId]: {
+                ...prev[submissionId],
+                grade
+            }
+        }))
+    }
+
+    const handleFeedbackChange = (submissionId: number, feedback: string) => {
+        setGradingData(prev => ({
+            ...prev,
+            [submissionId]: {
+                ...prev[submissionId],
+                feedback
+            }
+        }))
     }
 
     const toggleSubmissionSelection = (submissionId: number) => {
@@ -440,52 +391,6 @@ export function GradingInterface() {
         if (percentage >= 70) return 'text-yellow-600 dark:text-yellow-400'
         if (percentage >= 60) return 'text-orange-600 dark:text-orange-400'
         return 'text-red-600 dark:text-red-400'
-    }
-
-    const gradeTemplates = [
-        { label: "Excellent (90-100%)", feedback: "Excellent work! You have demonstrated a thorough understanding of the concepts." },
-        { label: "Good (80-89%)", feedback: "Good work! You have shown a solid understanding with minor areas for improvement." },
-        { label: "Satisfactory (70-79%)", feedback: "Satisfactory work. Please review the feedback and work on the highlighted areas." },
-        { label: "Needs Improvement (60-69%)", feedback: "Your work needs improvement. Please review the concepts and seek help if needed." },
-        { label: "Unsatisfactory (<60%)", feedback: "This work does not meet the required standards. Please redo and resubmit." }
-    ]
-
-    const applyGradeTemplate = (submissionId: number, maxMarks: number) => {
-        const template = gradeTemplates.find(t => t.label === selectedGradeTemplate)
-        if (!template) return
-
-        let grade = 0
-        if (template.label.includes("90-100%")) grade = Math.round(maxMarks * 0.95)
-        else if (template.label.includes("80-89%")) grade = Math.round(maxMarks * 0.85)
-        else if (template.label.includes("70-79%")) grade = Math.round(maxMarks * 0.75)
-        else if (template.label.includes("60-69%")) grade = Math.round(maxMarks * 0.65)
-        else grade = Math.round(maxMarks * 0.50)
-
-        setGradingData(prev => ({
-            ...prev,
-            [submissionId]: {
-                grade: grade.toString(),
-                feedback: template.feedback
-            }
-        }))
-    }
-
-    // Generate Excel file content
-    const generateExcelFile = (data: any[][], headers: string[]) => {
-        // Create a basic XLSX structure
-        let excelContent = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-<sheets><sheet name="Grades" sheetId="1" r:id="rId1"/></sheets>
-</workbook>`
-
-        // For simplicity, we'll create a CSV-like format that Excel can read
-        const csvData = data.map(row =>
-            row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
-        ).join('\n')
-
-        // Add UTF-8 BOM for Excel compatibility  
-        const bom = '\uFEFF'
-        return new TextEncoder().encode(bom + csvData)
     }
 
     const stats: GradingStats = React.useMemo(() => {
@@ -572,9 +477,9 @@ export function GradingInterface() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-foreground">Grading Interface</h2>
+                    <h2 className="text-3xl font-bold tracking-tight text-foreground">Enhanced Grading Interface</h2>
                     <p className="text-muted-foreground">
-                        Review and grade student submissions
+                        Review and grade student submissions with advanced features
                     </p>
                 </div>
                 <div className="flex gap-2">
@@ -582,72 +487,10 @@ export function GradingInterface() {
                         <RefreshCw className="h-4 w-4 mr-2" />
                         Refresh
                     </Button>
-                    <Button
-                        onClick={handleExportGrades}
-                        variant="outline"
-                        size="sm"
-                        disabled={isLoading || filteredSubmissions.length === 0}
-                    >
-                        <Download className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                        {isLoading ? 'Exporting...' : `Export Excel (${filteredSubmissions.length})`}
+                    <Button onClick={handleExportGrades} variant="outline" size="sm" disabled={isLoading}>
+                        <Download className="h-4 w-4 mr-2" />
+                        Export CSV
                     </Button>
-                    <Dialog>
-                        <DialogTrigger asChild>
-                            <Button variant="outline" size="sm">
-                                <BarChart3 className="h-4 w-4 mr-2" />
-                                Settings
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Grading Settings</DialogTitle>
-                                <DialogDescription>
-                                    Customize your grading experience
-                                </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id="auto-save"
-                                        checked={isAutoSaveEnabled}
-                                        onCheckedChange={(checked) => setIsAutoSaveEnabled(checked === true)}
-                                    />
-                                    <Label htmlFor="auto-save">Enable auto-save (saves after 2 seconds of inactivity)</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id="quick-grade"
-                                        checked={quickGradeMode}
-                                        onCheckedChange={(checked) => setQuickGradeMode(checked === true)}
-                                    />
-                                    <Label htmlFor="quick-grade">Quick grade mode (Enter to save, Tab to next)</Label>
-                                </div>
-                                <div>
-                                    <Label>Grade Templates</Label>
-                                    <Select value={selectedGradeTemplate} onValueChange={setSelectedGradeTemplate}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select a grading template" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {gradeTemplates.map((template) => (
-                                                <SelectItem key={template.label} value={template.label}>
-                                                    {template.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="text-sm text-muted-foreground">
-                                    <h4 className="font-medium mb-2">Keyboard Shortcuts:</h4>
-                                    <ul className="space-y-1">
-                                        <li>• Ctrl/Cmd + E: Export grades</li>
-                                        <li>• Ctrl/Cmd + A: Select all submissions</li>
-                                        <li>• Escape: Clear selection</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </DialogContent>
-                    </Dialog>
                     {selectedSubmissions.size > 0 && (
                         <Dialog open={bulkGradeOpen} onOpenChange={setBulkGradeOpen}>
                             <DialogTrigger asChild>
@@ -690,7 +533,7 @@ export function GradingInterface() {
                                         </Button>
                                         <Button
                                             onClick={handleBulkGrade}
-                                            disabled={!bulkGradeData.grade}
+                                            disabled={!bulkGradeData.grade || isLoading}
                                         >
                                             Grade All
                                         </Button>
@@ -702,78 +545,27 @@ export function GradingInterface() {
                 </div>
             </div>
 
-            {/* Auto-save indicator */}
-            {isAutoSaveEnabled && (
-                <div className="mb-4 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                        Auto-save enabled - Changes will be saved automatically
-                    </div>
-                </div>
-            )}
-
-            {/* Enhanced Stats Cards */}
+            {/* Enhanced Stats */}
             <div className="grid gap-4 md:grid-cols-6">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total</CardTitle>
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.total}</div>
-                        <Progress value={100} className="mt-2 h-1" />
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Graded</CardTitle>
-                        <GraduationCap className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-green-600">{stats.graded}</div>
-                        <Progress value={stats.total > 0 ? (stats.graded / stats.total) * 100 : 0} className="mt-2 h-1" />
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Pending</CardTitle>
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-orange-600">{stats.pending}</div>
-                        <Progress value={stats.total > 0 ? (stats.pending / stats.total) * 100 : 0} className="mt-2 h-1" />
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Late</CardTitle>
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-red-600">{stats.late}</div>
-                        <Progress value={stats.total > 0 ? (stats.late / stats.total) * 100 : 0} className="mt-2 h-1" />
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Average</CardTitle>
-                        <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{Math.round(stats.avgGrade)}%</div>
-                        <Progress value={stats.avgGrade} className="mt-2 h-1" />
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Selected</CardTitle>
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-blue-600">{selectedSubmissions.size}</div>
-                        <Progress value={stats.total > 0 ? (selectedSubmissions.size / stats.total) * 100 : 0} className="mt-2 h-1" />
-                    </CardContent>
-                </Card>
+                {[
+                    { label: 'Total', value: stats.total, icon: FileText, progress: 100 },
+                    { label: 'Graded', value: stats.graded, icon: GraduationCap, progress: stats.total > 0 ? (stats.graded / stats.total) * 100 : 0, color: 'text-green-600' },
+                    { label: 'Pending', value: stats.pending, icon: Calendar, progress: stats.total > 0 ? (stats.pending / stats.total) * 100 : 0, color: 'text-orange-600' },
+                    { label: 'Late', value: stats.late, icon: Calendar, progress: stats.total > 0 ? (stats.late / stats.total) * 100 : 0, color: 'text-red-600' },
+                    { label: 'Average', value: `${Math.round(stats.avgGrade)}%`, icon: BarChart3, progress: stats.avgGrade },
+                    { label: 'Selected', value: selectedSubmissions.size, icon: Users, progress: stats.total > 0 ? (selectedSubmissions.size / stats.total) * 100 : 0, color: 'text-blue-600' }
+                ].map((stat, index) => (
+                    <Card key={index}>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">{stat.label}</CardTitle>
+                            <stat.icon className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className={`text-2xl font-bold ${stat.color || ''}`}>{stat.value}</div>
+                            <Progress value={stat.progress} className="mt-2 h-1" />
+                        </CardContent>
+                    </Card>
+                ))}
             </div>
 
             <Tabs defaultValue="grading" className="w-full">
@@ -783,7 +575,7 @@ export function GradingInterface() {
                 </TabsList>
 
                 <TabsContent value="grading" className="space-y-4">
-                    {/* Enhanced Filters */}
+                    {/* Filters */}
                     <Card>
                         <CardHeader>
                             <div className="flex items-center justify-between">
@@ -809,7 +601,7 @@ export function GradingInterface() {
                         <CardContent>
                             <div className="grid gap-4 md:grid-cols-4">
                                 <div>
-                                    <Label htmlFor="assignment-filter">Assignment</Label>
+                                    <Label>Assignment</Label>
                                     <Select value={selectedAssignment} onValueChange={setSelectedAssignment}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="All assignments" />
@@ -825,7 +617,7 @@ export function GradingInterface() {
                                     </Select>
                                 </div>
                                 <div>
-                                    <Label htmlFor="status-filter">Status</Label>
+                                    <Label>Status</Label>
                                     <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="All statuses" />
@@ -839,11 +631,10 @@ export function GradingInterface() {
                                     </Select>
                                 </div>
                                 <div>
-                                    <Label htmlFor="search">Search</Label>
+                                    <Label>Search</Label>
                                     <div className="relative">
                                         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                                         <Input
-                                            id="search"
                                             placeholder="Search students, assignments..."
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -869,7 +660,7 @@ export function GradingInterface() {
                         </CardContent>
                     </Card>
 
-                    {/* Submissions Display */}
+                    {/* Submissions */}
                     <Card>
                         <CardHeader>
                             <div className="flex items-center justify-between">
@@ -924,11 +715,10 @@ export function GradingInterface() {
                                             </TableHead>
                                             <TableHead>Student</TableHead>
                                             <TableHead>Assignment</TableHead>
-                                            <TableHead>Submission</TableHead>
                                             <TableHead>Status</TableHead>
                                             <TableHead>Grade</TableHead>
                                             <TableHead>Feedback</TableHead>
-                                            <TableHead className="text-right">Actions</TableHead>
+                                            <TableHead>Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -952,19 +742,7 @@ export function GradingInterface() {
                                                 <TableCell>
                                                     <div>
                                                         <div className="font-medium">{submission.assignmentTitle}</div>
-                                                        <div className="text-sm text-muted-foreground">{submission.courseCode} - Max: {submission.maxMarks} marks</div>
-                                                        <div className="text-sm text-muted-foreground">Due: {new Date(submission.dueDate).toLocaleDateString()}</div>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div>
-                                                        <Button variant="link" className="p-0 h-auto text-blue-600 hover:text-blue-800">
-                                                            <Download className="mr-2 h-4 w-4" />
-                                                            {submission.submissionFile}
-                                                        </Button>
-                                                        <div className="text-sm text-muted-foreground">
-                                                            {new Date(submission.submissionDate).toLocaleDateString()}
-                                                        </div>
+                                                        <div className="text-sm text-muted-foreground">{submission.courseCode}</div>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
@@ -978,36 +756,16 @@ export function GradingInterface() {
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center gap-2">
-                                                        <div className="flex items-center gap-1">
-                                                            <Input
-                                                                type="number"
-                                                                min="0"
-                                                                max={submission.maxMarks}
-                                                                value={getCurrentGrade(submission.id, submission.grade)}
-                                                                onChange={(e) => handleGradeChange(submission.id, e.target.value)}
-                                                                onKeyDown={(e) => {
-                                                                    if (quickGradeMode && e.key === 'Enter') {
-                                                                        e.preventDefault()
-                                                                        handleSaveGrade(submission.id)
-                                                                    }
-                                                                }}
-                                                                className="w-20"
-                                                                placeholder="Grade"
-                                                            />
-                                                            {selectedGradeTemplate && (
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="outline"
-                                                                    size="sm"
-                                                                    onClick={() => applyGradeTemplate(submission.id, submission.maxMarks)}
-                                                                    className="h-8 px-2"
-                                                                    title="Apply selected template"
-                                                                >
-                                                                    T
-                                                                </Button>
-                                                            )}
-                                                        </div>
-                                                        <span className="text-sm text-muted-foreground">/ {submission.maxMarks}</span>
+                                                        <Input
+                                                            type="number"
+                                                            min="0"
+                                                            max={submission.maxMarks}
+                                                            value={getCurrentGrade(submission.id, submission.grade)}
+                                                            onChange={(e) => handleGradeChange(submission.id, e.target.value)}
+                                                            className="w-20"
+                                                            placeholder="Grade"
+                                                        />
+                                                        <span className="text-sm text-muted-foreground">/{submission.maxMarks}</span>
                                                         {submission.grade !== null && (
                                                             <span className={`text-sm font-medium ${getGradeColor(submission.grade, submission.maxMarks)}`}>
                                                                 ({Math.round((submission.grade / submission.maxMarks) * 100)}%)
@@ -1024,31 +782,14 @@ export function GradingInterface() {
                                                         className="min-w-[200px]"
                                                     />
                                                 </TableCell>
-                                                <TableCell className="text-right">
-                                                    <div className="flex gap-1">
-                                                        <Button
-                                                            onClick={() => handleSaveGrade(submission.id)}
-                                                            disabled={isLoading || !gradingData[submission.id]?.grade}
-                                                            size="sm"
-                                                            variant={gradingData[submission.id]?.grade ? "default" : "outline"}
-                                                            className={gradingData[submission.id]?.grade ? "bg-green-600 hover:bg-green-700" : ""}
-                                                        >
-                                                            <Save className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                                                        </Button>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() => {
-                                                                // Future: Open submission preview
-                                                                toast({
-                                                                    title: "Preview",
-                                                                    description: "Submission preview coming soon!"
-                                                                })
-                                                            }}
-                                                        >
-                                                            <Eye className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
+                                                <TableCell>
+                                                    <Button
+                                                        onClick={() => handleSaveGrade(submission.id)}
+                                                        disabled={isLoading || !gradingData[submission.id]?.grade}
+                                                        size="sm"
+                                                    >
+                                                        <Save className="h-4 w-4" />
+                                                    </Button>
                                                 </TableCell>
                                             </TableRow>
                                         ))}
@@ -1060,124 +801,30 @@ export function GradingInterface() {
                 </TabsContent>
 
                 <TabsContent value="analytics" className="space-y-4">
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Grading Progress</CardTitle>
-                                <CardDescription>
-                                    Track your grading completion status
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between text-sm">
-                                            <span>Completed</span>
-                                            <span>{stats.graded}/{stats.total} ({stats.total > 0 ? Math.round((stats.graded / stats.total) * 100) : 0}%)</span>
-                                        </div>
-                                        <Progress value={stats.total > 0 ? (stats.graded / stats.total) * 100 : 0} className="h-3" />
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-4 pt-2">
-                                        <div className="text-center">
-                                            <div className="text-2xl font-bold text-green-600">{stats.graded}</div>
-                                            <div className="text-xs text-muted-foreground">Graded</div>
-                                        </div>
-                                        <div className="text-center">
-                                            <div className="text-2xl font-bold text-orange-600">{stats.pending}</div>
-                                            <div className="text-xs text-muted-foreground">Pending</div>
-                                        </div>
-                                        <div className="text-center">
-                                            <div className="text-2xl font-bold text-red-600">{stats.late}</div>
-                                            <div className="text-xs text-muted-foreground">Late</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Performance Overview</CardTitle>
-                                <CardDescription>
-                                    Grade distribution and performance metrics
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
-                                    <div className="text-center">
-                                        <div className="text-3xl font-bold text-blue-600">{Math.round(stats.avgGrade)}%</div>
-                                        <div className="text-sm text-muted-foreground">Average Grade</div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        {[
-                                            { label: "Excellent (90%+)", color: "bg-green-500", count: filteredSubmissions.filter(s => s.grade && (s.grade / s.maxMarks) >= 0.9).length },
-                                            { label: "Good (80-89%)", color: "bg-blue-500", count: filteredSubmissions.filter(s => s.grade && (s.grade / s.maxMarks) >= 0.8 && (s.grade / s.maxMarks) < 0.9).length },
-                                            { label: "Average (70-79%)", color: "bg-yellow-500", count: filteredSubmissions.filter(s => s.grade && (s.grade / s.maxMarks) >= 0.7 && (s.grade / s.maxMarks) < 0.8).length },
-                                            { label: "Below Average (<70%)", color: "bg-red-500", count: filteredSubmissions.filter(s => s.grade && (s.grade / s.maxMarks) < 0.7).length }
-                                        ].map((item) => (
-                                            <div key={item.label} className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2 text-sm">
-                                                    <div className={`w-3 h-3 rounded ${item.color}`}></div>
-                                                    {item.label}
-                                                </div>
-                                                <span className="text-sm font-medium">{item.count}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
                     <Card>
                         <CardHeader>
-                            <CardTitle>Quick Actions</CardTitle>
-                            <CardDescription>
-                                Useful actions for efficient grading
-                            </CardDescription>
+                            <CardTitle>Grading Analytics</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="grid gap-2 md:grid-cols-4">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setSelectedStatus("submitted")}
-                                    className="h-auto p-3 flex flex-col gap-1"
-                                >
-                                    <Calendar className="h-4 w-4" />
-                                    <span className="text-xs">Show Pending</span>
-                                    <span className="text-lg font-bold">{stats.pending}</span>
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setSelectedStatus("late")}
-                                    className="h-auto p-3 flex flex-col gap-1"
-                                >
-                                    <Calendar className="h-4 w-4 text-red-500" />
-                                    <span className="text-xs">Show Late</span>
-                                    <span className="text-lg font-bold">{stats.late}</span>
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setSelectedStatus("graded")}
-                                    className="h-auto p-3 flex flex-col gap-1"
-                                >
-                                    <GraduationCap className="h-4 w-4 text-green-500" />
-                                    <span className="text-xs">Show Graded</span>
-                                    <span className="text-lg font-bold">{stats.graded}</span>
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => {
-                                        setSelectedStatus("all")
-                                        setSelectedAssignment("all")
-                                        setSearchQuery("")
-                                    }}
-                                    className="h-auto p-3 flex flex-col gap-1"
-                                >
-                                    <RefreshCw className="h-4 w-4" />
-                                    <span className="text-xs">Reset Filters</span>
-                                    <span className="text-lg font-bold">{stats.total}</span>
-                                </Button>
+                            <div className="space-y-6">
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    <div>
+                                        <h4 className="font-medium mb-2">Grading Progress</h4>
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between text-sm">
+                                                <span>Graded</span>
+                                                <span>{stats.graded}/{stats.total}</span>
+                                            </div>
+                                            <Progress value={stats.total > 0 ? (stats.graded / stats.total) * 100 : 0} />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 className="font-medium mb-2">Performance</h4>
+                                        <div className="text-sm text-muted-foreground">
+                                            Average Grade: {Math.round(stats.avgGrade)}%
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

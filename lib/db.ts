@@ -55,7 +55,7 @@ export async function safeQuery<T>(queryFn: () => Promise<T>, errorMessage = "Da
   try {
     return await queryFn()
   } catch (error) {
-    console.error(`${errorMessage}:`, errorMessage)
+    console.error(`${errorMessage}:`, error)
     throw new Error(errorMessage)
   }
 }

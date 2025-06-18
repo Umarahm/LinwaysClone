@@ -43,6 +43,8 @@ import { UserProfile } from "@/components/profile/user-profile"
 import { signOut } from "@/lib/auth-actions"
 import { getAvatarColor } from "@/lib/utils"
 import { useAnnouncements } from "@/hooks/use-announcements"
+import { NotificationPopover } from "@/components/ui/notification-popover"
+import { useNotifications } from "@/hooks/use-notifications"
 import { useToast } from "@/hooks/use-toast"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -128,6 +130,14 @@ export function DashboardClient({ user: initialUser }: DashboardClientProps) {
   const [currentPage, setCurrentPage] = React.useState("dashboard")
   const [attendanceData, setAttendanceData] = React.useState<any>(null)
   const [loading, setLoading] = React.useState(false)
+  // Notification system
+  const {
+    notifications,
+    markAsRead,
+    markAllAsRead,
+    clearAll
+  } = useNotifications(user?.role as 'student' | 'faculty' | 'admin' || 'student')
+
   const navigationItems = getNavigationItems(user.role)
   const { toast } = useToast()
 
@@ -326,9 +336,7 @@ export function DashboardClient({ user: initialUser }: DashboardClientProps) {
 
       case "my-grades":
         return (
-          <div className="p-6">
-            <GradesDashboard />
-          </div>
+          <GradesDashboard />
         )
 
       case "course-catalog":
@@ -386,7 +394,7 @@ export function DashboardClient({ user: initialUser }: DashboardClientProps) {
         )
 
       case "grades":
-        return <GradesOverview grades={mockGrades} courseGPAs={mockCourseGPAs} overallGPA={3.67} />
+        return <GradesOverview grades={[]} courseGPAs={[]} overallGPA={0} />
 
       case "assignment-management":
         return (
@@ -661,30 +669,13 @@ export function DashboardClient({ user: initialUser }: DashboardClientProps) {
 
               <div className="flex items-center gap-3">
 
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="relative transition-all duration-300 hover:scale-110 sidebar-icon-hover"
-                  onClick={() => {
-                    setCurrentPage("announcements")
-                    toast({
-                      title: "Announcements",
-                      description: "Checking for new announcements...",
-                      duration: 2000,
-                    })
-                    refreshAnnouncements()
-                  }}
-                  title={`Notifications${unreadCount > 0 ? ` (${unreadCount} new)` : ''}`}
-                >
-                  <Bell className="h-5 w-5" />
-                  {unreadCount > 0 && (
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center">
-                      <span className="text-xs text-white font-bold">
-                        {unreadCount > 9 ? '9+' : unreadCount}
-                      </span>
-                    </div>
-                  )}
-                </Button>
+                <NotificationPopover
+                  notifications={notifications}
+                  onMarkAsRead={markAsRead}
+                  onMarkAllAsRead={markAllAsRead}
+                  onClearAll={clearAll}
+                  className="transition-all duration-300 hover:scale-110 sidebar-icon-hover"
+                />
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

@@ -97,10 +97,12 @@ export function AdminDashboard() {
           {/* Hero Section */}
           <div className="admin-glass rounded-3xl p-8 glow-effect subtle-wave">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-              <div className="mb-6 lg:mb-0">
-                <h1 className="text-4xl font-bold text-white mb-3 admin-floating">
-                  System Administration
-                </h1>
+              <div className="mb-6 lg:mb-0 flex-1">
+                <div className="mb-3">
+                  <h1 className="text-4xl font-bold text-white admin-floating">
+                    System Administration
+                  </h1>
+                </div>
                 <p className="text-white/80 text-lg leading-relaxed">
                   Manage users, courses, and system-wide operations
                 </p>

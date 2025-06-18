@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
         // Verify the submission belongs to an assignment taught by this faculty
         const submissionCheck = await safeQuery(
             () => sql`
-        SELECT s.id, a.max_marks, a.title, c.code, c.name, u.full_name
+        SELECT s.id, a.max_marks, a.title, c.code, c.name, u.full_name, u.email as student_email
         FROM submissions s
         JOIN assignments a ON s.assignment_id = a.id
         JOIN courses c ON a.course_id = c.id
@@ -66,23 +66,43 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // Update the submission with grade and feedback
+        // Update the submission with grade, feedback, and graded timestamp
         const updatedSubmission = await safeQuery(
             () => sql`
         UPDATE submissions 
-        SET grade = ${grade}, feedback = ${feedback || null}
+        SET grade = ${grade}, feedback = ${feedback || null}, graded_at = CURRENT_TIMESTAMP
         WHERE id = ${submissionId}
-        RETURNING id, grade, feedback
+        RETURNING id, grade, feedback, graded_at
       `,
             "Failed to update submission grade"
         )
+
+        // Send notification to student about the grade
+        try {
+            const percentage = Math.round((grade / submission.max_marks) * 100)
+            await sql`
+                INSERT INTO announcements (title, message, author_id, recipient, target_user_email, priority)
+                VALUES (
+                    ${`Assignment Graded: ${submission.title}`},
+                    ${`Your assignment "${submission.title}" for ${submission.name} (${submission.code}) has been graded. Grade: ${grade}/${submission.max_marks} (${percentage}%).${feedback ? ` Feedback: ${feedback}` : ''}`},
+                    ${user.id},
+                    ${'student'},
+                    ${submission.student_email},
+                    ${'medium'}
+                )
+            `
+        } catch (notificationError) {
+            console.error('Failed to send grade notification:', notificationError)
+            // Don't fail the grading if notification fails
+        }
 
         return NextResponse.json({
             success: true,
             submission: {
                 id: updatedSubmission[0].id,
                 grade: updatedSubmission[0].grade,
-                feedback: updatedSubmission[0].feedback
+                feedback: updatedSubmission[0].feedback,
+                gradedAt: updatedSubmission[0].graded_at
             },
             message: `Successfully graded submission for ${submission.full_name}`
         })

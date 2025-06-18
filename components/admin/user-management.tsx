@@ -18,6 +18,7 @@ interface User {
     full_name: string;
     role: 'student' | 'faculty';
     department: string;
+    roll_no?: string;
     created_at: string;
 }
 
@@ -27,6 +28,7 @@ interface UserFormData {
     full_name: string;
     role: 'student' | 'faculty';
     department: string;
+    roll_no: string;
 }
 
 export function UserManagement() {
@@ -39,7 +41,8 @@ export function UserManagement() {
         password: '',
         full_name: '',
         role: 'student',
-        department: ''
+        department: '',
+        roll_no: ''
     });
     const { toast } = useToast();
 
@@ -105,7 +108,8 @@ export function UserManagement() {
                     password: '',
                     full_name: '',
                     role: 'student',
-                    department: ''
+                    department: '',
+                    roll_no: ''
                 });
                 fetchUsers();
             } else {
@@ -128,7 +132,8 @@ export function UserManagement() {
             password: '', // Don't populate password for security
             full_name: user.full_name,
             role: user.role,
-            department: user.department
+            department: user.department,
+            roll_no: user.roll_no || ''
         });
         setDialogOpen(true);
     };
@@ -181,7 +186,8 @@ export function UserManagement() {
                                         password: '',
                                         full_name: '',
                                         role: 'student',
-                                        department: ''
+                                        department: '',
+                                        roll_no: ''
                                     });
                                 }}
                             >
@@ -262,6 +268,26 @@ export function UserManagement() {
                                         </SelectContent>
                                     </Select>
                                 </div>
+                                <div>
+                                    <Label htmlFor="roll_no">
+                                        Roll Number {formData.role && (
+                                            <span className="text-xs text-muted-foreground">
+                                                (Optional - will be auto-generated if empty)
+                                            </span>
+                                        )}
+                                    </Label>
+                                    <Input
+                                        id="roll_no"
+                                        type="text"
+                                        placeholder={
+                                            formData.role === "student" ? "STU0001" :
+                                                formData.role === "faculty" ? "FAC0001" :
+                                                    "Roll Number"
+                                        }
+                                        value={formData.roll_no}
+                                        onChange={(e) => setFormData({ ...formData, roll_no: e.target.value.toUpperCase() })}
+                                    />
+                                </div>
                                 <div className="flex justify-end gap-2">
                                     <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                                         Cancel
@@ -281,6 +307,7 @@ export function UserManagement() {
                         <TableRow>
                             <TableHead>Name</TableHead>
                             <TableHead>Email</TableHead>
+                            <TableHead>Roll No.</TableHead>
                             <TableHead>Role</TableHead>
                             <TableHead>Department</TableHead>
                             <TableHead>Created</TableHead>
@@ -292,6 +319,11 @@ export function UserManagement() {
                             <TableRow key={user.id}>
                                 <TableCell className="font-medium">{user.full_name}</TableCell>
                                 <TableCell>{user.email}</TableCell>
+                                <TableCell>
+                                    <Badge variant="outline" className="font-mono">
+                                        {user.roll_no || 'Not Set'}
+                                    </Badge>
+                                </TableCell>
                                 <TableCell>
                                     <Badge variant={user.role === 'faculty' ? 'default' : 'secondary'}>
                                         {user.role}

@@ -9,7 +9,7 @@ export async function PUT(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { email, password, full_name, role, department } = await request.json();
+        const { email, password, full_name, role, department, roll_no } = await request.json();
         const resolvedParams = await params;
         const userId = parseInt(resolvedParams.id);
 
@@ -54,18 +54,18 @@ export async function PUT(
         UPDATE users 
         SET email = ${email}, password_hash = ${hashedPassword}, 
             full_name = ${full_name}, role = ${role}, department = ${department},
-            updated_at = CURRENT_TIMESTAMP
+            roll_no = ${roll_no}, updated_at = CURRENT_TIMESTAMP
         WHERE id = ${userId}
-        RETURNING id, email, full_name, role, department, created_at
+        RETURNING id, email, full_name, role, department, roll_no, created_at
       `;
         } else {
             // Update without changing password
             updateQuery = sql`
         UPDATE users 
         SET email = ${email}, full_name = ${full_name}, role = ${role}, 
-            department = ${department}, updated_at = CURRENT_TIMESTAMP
+            department = ${department}, roll_no = ${roll_no}, updated_at = CURRENT_TIMESTAMP
         WHERE id = ${userId}
-        RETURNING id, email, full_name, role, department, created_at
+        RETURNING id, email, full_name, role, department, roll_no, created_at
       `;
         }
 

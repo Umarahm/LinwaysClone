@@ -19,6 +19,7 @@ export function SignUpForm() {
     password: "",
     role: "",
     department: "",
+    rollNo: "",
   })
   const [isLoading, setIsLoading] = React.useState(false)
   const [message, setMessage] = React.useState<{ text: string; type: "success" | "error" } | null>(null)
@@ -34,6 +35,7 @@ export function SignUpForm() {
       formData.fullName,
       formData.role,
       formData.department,
+      formData.rollNo,
     )
 
     if (result.success) {
@@ -160,6 +162,28 @@ export function SignUpForm() {
                 onChange={(e) => handleInputChange("department", e.target.value)}
                 className="h-11 border-input focus:border-blue-500 focus:ring-blue-500 bg-background text-foreground"
                 required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="rollNo" className="text-sm font-medium text-foreground">
+                Roll Number {formData.role && (
+                  <span className="text-xs text-muted-foreground">
+                    (Optional - will be auto-generated if empty)
+                  </span>
+                )}
+              </Label>
+              <Input
+                id="rollNo"
+                type="text"
+                placeholder={
+                  formData.role === "student" ? "STU0001" :
+                    formData.role === "faculty" ? "FAC0001" :
+                      "Roll Number"
+                }
+                value={formData.rollNo}
+                onChange={(e) => handleInputChange("rollNo", e.target.value.toUpperCase())}
+                className="h-11 border-input focus:border-blue-500 focus:ring-blue-500 bg-background text-foreground"
               />
             </div>
 

@@ -30,11 +30,27 @@ export function StudentDashboard() {
     available_count: 0,
     graded_assignments: 0
   })
+  const [userEmail, setUserEmail] = useState<string>("")
   const [isLoading, setIsLoading] = useState(true)
+
+
 
   useEffect(() => {
     fetchEnrollmentData()
+    fetchUserData()
   }, [])
+
+  const fetchUserData = async () => {
+    try {
+      const response = await fetch('/api/auth/me')
+      if (response.ok) {
+        const userData = await response.json()
+        setUserEmail(userData.user?.email || "")
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error)
+    }
+  }
 
   const fetchEnrollmentData = async () => {
     try {
@@ -82,10 +98,12 @@ export function StudentDashboard() {
           {/* Hero Section */}
           <div className="student-glass rounded-3xl p-8 glow-effect subtle-wave">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-              <div className="mb-6 lg:mb-0">
-                <h1 className="text-4xl font-bold text-white mb-3 student-floating">
-                  Welcome Back, Student!
-                </h1>
+              <div className="mb-6 lg:mb-0 flex-1">
+                <div className="mb-3">
+                  <h1 className="text-4xl font-bold text-white student-floating">
+                    Welcome Back, Student!
+                  </h1>
+                </div>
                 <p className="text-white/80 text-lg leading-relaxed">
                   Track your academic journey and stay on top of your studies
                 </p>
@@ -175,7 +193,7 @@ export function StudentDashboard() {
                   </div>
                   <div className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
                     <span className="text-white">Graded Assignments</span>
-                    <Badge variant="secondary" className="bg-white/20 text-white border-white/30">{studentStats.graded_assignments}</Badge>
+                    <Badge variant="secondary" className="bg-white/20 text-white border-white/30">{studentStats.graded_assignments || 0}</Badge>
                   </div>
                 </CardContent>
               </Card>
@@ -183,7 +201,7 @@ export function StudentDashboard() {
 
             {/* Announcements */}
             <div className="student-glass rounded-3xl overflow-hidden glow-effect subtle-wave">
-              <DashboardAnnouncements userRole="student" limit={4} />
+              <DashboardAnnouncements userRole="student" userEmail={userEmail} limit={4} />
             </div>
           </div>
         </div>
