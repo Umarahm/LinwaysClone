@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { Trash2, Edit, Plus, UserPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface User {
     id: number;
@@ -165,7 +166,48 @@ export function UserManagement() {
     };
 
     if (loading) {
-        return <div className="flex justify-center py-8">Loading users...</div>;
+        return (
+            <Card>
+                <CardHeader>
+                    <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                            <Skeleton variant="shimmer" className="h-5 w-5" />
+                            <Skeleton variant="shimmer" className="h-6 w-[140px]" />
+                        </div>
+                        <Skeleton variant="shimmer" className="h-9 w-[100px] rounded" />
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-3">
+                        {/* Table Header */}
+                        <div className="grid grid-cols-7 gap-4 p-4 border-b">
+                            <Skeleton variant="shimmer" className="h-4 w-[60px]" />
+                            <Skeleton variant="shimmer" className="h-4 w-[80px]" />
+                            <Skeleton variant="shimmer" className="h-4 w-[70px]" />
+                            <Skeleton variant="shimmer" className="h-4 w-[50px]" />
+                            <Skeleton variant="shimmer" className="h-4 w-[90px]" />
+                            <Skeleton variant="shimmer" className="h-4 w-[70px]" />
+                            <Skeleton variant="shimmer" className="h-4 w-[70px]" />
+                        </div>
+                        {/* Table Rows */}
+                        {Array.from({ length: 8 }).map((_, i) => (
+                            <div key={i} className="grid grid-cols-7 gap-4 p-4">
+                                <Skeleton variant="shimmer" className="h-4 w-[100px]" />
+                                <Skeleton variant="shimmer" className="h-4 w-[140px]" />
+                                <Skeleton variant="shimmer" className="h-6 w-[80px] rounded-full" />
+                                <Skeleton variant="shimmer" className="h-6 w-[60px] rounded-full" />
+                                <Skeleton variant="shimmer" className="h-4 w-[80px]" />
+                                <Skeleton variant="shimmer" className="h-4 w-[80px]" />
+                                <div className="flex gap-2">
+                                    <Skeleton variant="shimmer" className="h-8 w-8 rounded" />
+                                    <Skeleton variant="shimmer" className="h-8 w-8 rounded" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+        );
     }
 
     return (

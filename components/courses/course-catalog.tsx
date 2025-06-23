@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Progress } from "@/components/ui/progress"
 import { useToast } from "@/hooks/use-toast"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface Course {
     id: number
@@ -130,7 +131,7 @@ export function CourseCatalog() {
     }, [allCourses, searchTerm, selectedDepartment])
 
     const departments = React.useMemo(() => {
-        const depts = Array.from(new Set(allCourses.map(course => course.code.substring(0, 2))))
+        const depts = Array.from(new Set(allCourses.map(course => course.code.substring(0, 3))))
         return depts.sort()
     }, [allCourses])
 
@@ -191,8 +192,77 @@ export function CourseCatalog() {
     if (loading) {
         return (
             <div className="space-y-6">
-                <div className="flex justify-center items-center h-64">
-                    <div className="text-lg">Loading courses...</div>
+                {/* Header with Stats Skeleton */}
+                <div className="bg-card border rounded-lg p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="space-y-2">
+                            <Skeleton variant="shimmer" className="h-8 w-[180px]" />
+                            <Skeleton variant="shimmer" className="h-4 w-[300px]" />
+                        </div>
+                        <div className="text-right space-y-1">
+                            <Skeleton variant="shimmer" className="h-8 w-[40px]" />
+                            <Skeleton variant="shimmer" className="h-3 w-[100px]" />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {Array.from({ length: 3 }).map((_, i) => (
+                            <div key={i} className="bg-muted/50 p-4 rounded-lg">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Skeleton variant="shimmer" className="h-5 w-5" />
+                                    <Skeleton variant="shimmer" className="h-4 w-[120px]" />
+                                </div>
+                                <Skeleton variant="shimmer" className="h-8 w-[60px]" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Filters Skeleton */}
+                <div className="flex flex-col sm:flex-row gap-4">
+                    <Skeleton variant="shimmer" className="h-10 flex-1 rounded" />
+                    <Skeleton variant="shimmer" className="h-10 w-full sm:w-48 rounded" />
+                </div>
+
+                {/* Course Cards Skeleton */}
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                        <Card key={i} className="transition-all duration-200">
+                            <CardHeader>
+                                <div className="flex items-start justify-between">
+                                    <div className="space-y-2">
+                                        <Skeleton variant="shimmer" className="h-5 w-[80px]" />
+                                        <Skeleton variant="shimmer" className="h-4 w-[160px]" />
+                                    </div>
+                                    <Skeleton variant="shimmer" className="h-6 w-[70px] rounded-full" />
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <Skeleton variant="shimmer" className="h-4 w-4" />
+                                    <Skeleton variant="shimmer" className="h-4 w-[100px]" />
+                                    <Skeleton variant="shimmer" className="h-4 w-[60px]" />
+                                </div>
+                            </CardHeader>
+
+                            <CardContent>
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Skeleton variant="shimmer" className="h-4 w-full" />
+                                        <Skeleton variant="shimmer" className="h-4 w-[80%]" />
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-center">
+                                            <Skeleton variant="shimmer" className="h-4 w-[120px]" />
+                                            <Skeleton variant="shimmer" className="h-4 w-[40px]" />
+                                        </div>
+
+                                        <Skeleton variant="shimmer" className="h-9 w-full rounded" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
                 </div>
             </div>
         )

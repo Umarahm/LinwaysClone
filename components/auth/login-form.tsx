@@ -125,26 +125,16 @@ export function LoginForm() {
 
           {/* Demo credentials */}
           <div className="mt-4 p-3 bg-muted/50 rounded-lg border border-border">
-            <p className="text-xs text-muted-foreground mb-2">Demo credentials (All working accounts):</p>
+            <p className="text-xs text-muted-foreground mb-2 font-semibold">DEMO ACCOUNTS</p>
             <div className="text-xs space-y-1 text-muted-foreground">
               <p>
-                <strong className="text-foreground">Students (Password: student123):</strong>
+                <strong className="text-foreground">Student:</strong> umar@presidency.edu
               </p>
-              <p className="ml-2">• alice.johnson@presidency.edu</p>
-              <p className="ml-2">• bob.smith@presidency.edu</p>
-              <p className="ml-2">• carol.davis@presidency.edu</p>
-              <p className="ml-2">• david.wilson@presidency.edu</p>
-              <p className="ml-2">• emma.brown@presidency.edu</p>
-
-              <p className="pt-2">
-                <strong className="text-foreground">Admin & Faculty (Password: password):</strong>
+              <p>
+                <strong className="text-foreground">Faculty:</strong> serin.simpson@presidency.edu
               </p>
-              <p className="ml-2">• admin@presidency.edu (Admin)</p>
-              <p className="ml-2">• dr.sarah@presidency.edu (Faculty)</p>
-              <p className="ml-2">• prof.mike@presidency.edu (Faculty)</p>
-
-              <p className="text-xs text-muted-foreground mt-2 italic">
-                * All accounts now have proper authentication ✅
+              <p>
+                <strong className="text-foreground">Admin:</strong> admin@presidency.edu
               </p>
             </div>
           </div>

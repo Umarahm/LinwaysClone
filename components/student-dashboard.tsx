@@ -7,8 +7,12 @@ import { useState, useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Skeleton, DashboardHeroSkeleton, TimetableSkeleton, CourseGridSkeleton, StatsCardSkeleton } from "@/components/ui/skeleton"
 import { DashboardAnnouncements } from "@/components/dashboard-announcements"
 import { StudentMiniTimetable } from "@/components/student/student-mini-timetable"
+import designSystem from '@/university_design_system.json'
+
+const DS = designSystem.designSystem;
 
 interface Course {
   id: number;
@@ -70,13 +74,141 @@ export function StudentDashboard() {
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-6 bg-background min-h-screen">
-        <div className="animate-pulse">
-          <div className="h-8 bg-muted rounded w-1/3 mb-4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 bg-muted rounded"></div>
-            ))}
+      <div
+        className="animated-gradient-bg dashboard-light-gradient min-h-screen relative overflow-hidden"
+        style={{
+          fontFamily: DS.typography.fontFamily.primary,
+          minHeight: DS.layout.structure.mainContent.minHeight,
+          backgroundColor: `hsl(var(--background))`,
+        }}
+      >
+        {/* Light Mode Background Gradient */}
+        <div className="background-gradient"></div>
+
+        {/* Gradient Orbs */}
+        <div className="gradient-orb"></div>
+        <div className="gradient-orb"></div>
+        <div className="gradient-orb"></div>
+
+        {/* Gradient Mesh Overlay */}
+        <div className="gradient-mesh"></div>
+
+        <div className="student-dashboard-container relative z-10">
+          <div style={{ padding: DS.spacing[6] }} className="space-y-8">
+            {/* Hero Section Skeleton */}
+            <div className="student-glass rounded-3xl glow-effect subtle-wave skeleton-glass p-8">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div className="flex-1 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Skeleton variant="shimmer" className="h-12 w-12 rounded-2xl bg-white/20" />
+                    <div className="space-y-2">
+                      <Skeleton variant="shimmer" className="h-8 w-[300px] bg-white/20" />
+                      <Skeleton variant="shimmer" className="h-5 w-[200px] bg-white/15" />
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="bg-white/10 p-4 rounded-lg space-y-2 backdrop-blur border border-white/20">
+                      <Skeleton variant="shimmer" className="h-6 w-[40px] bg-white/25" />
+                      <Skeleton variant="shimmer" className="h-3 w-[60px] bg-white/20" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Timetable Skeleton */}
+            <div className="student-glass rounded-3xl overflow-hidden glow-effect subtle-wave skeleton-glass p-6">
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Skeleton variant="shimmer" className="h-6 w-6 rounded bg-white/25" />
+                  <Skeleton variant="shimmer" className="h-6 w-[140px] bg-white/25" />
+                </div>
+                <div className="space-y-3">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-4 p-3 rounded-lg border border-white/20 bg-white/5">
+                      <Skeleton variant="shimmer" className="h-3 w-[60px] bg-white/20" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton variant="shimmer" className="h-4 w-[120px] bg-white/25" />
+                        <Skeleton variant="shimmer" className="h-3 w-[80px] bg-white/20" />
+                      </div>
+                      <Skeleton variant="shimmer" className="h-6 w-[60px] rounded-full bg-white/25" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Course Grid Skeleton */}
+            <div className="student-glass rounded-3xl overflow-hidden glow-effect subtle-wave skeleton-glass p-6">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Skeleton variant="shimmer" className="h-5 w-5 rounded bg-white/25" />
+                  <Skeleton variant="shimmer" className="h-6 w-[180px] bg-white/25" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="p-4 border border-white/20 rounded-lg bg-white/10 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <Skeleton variant="shimmer" className="h-5 w-[80px] bg-white/25" />
+                        <Skeleton variant="shimmer" className="h-4 w-[60px] bg-white/20" />
+                      </div>
+                      <Skeleton variant="shimmer" className="h-4 w-full bg-white/20" />
+                      <div className="flex justify-between text-xs">
+                        <Skeleton variant="shimmer" className="h-3 w-[60px] bg-white/20" />
+                        <Skeleton variant="shimmer" className="h-3 w-[80px] bg-white/20" />
+                      </div>
+                      <Skeleton variant="shimmer" className="h-3 w-[100px] bg-white/20" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Progress Skeleton */}
+              <div className="student-glass rounded-3xl overflow-hidden glow-effect subtle-wave skeleton-glass p-6">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Skeleton variant="shimmer" className="h-5 w-5 rounded bg-white/25" />
+                    <Skeleton variant="shimmer" className="h-6 w-[140px] bg-white/25" />
+                  </div>
+                  <div className="space-y-3">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className="space-y-2">
+                        <div className="flex justify-between">
+                          <Skeleton variant="shimmer" className="h-4 w-[100px] bg-white/20" />
+                          <Skeleton variant="shimmer" className="h-4 w-[40px] bg-white/20" />
+                        </div>
+                        <Skeleton variant="shimmer" className="h-2 w-full rounded-full bg-white/20" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Links Skeleton */}
+              <div className="student-glass rounded-3xl overflow-hidden glow-effect subtle-wave skeleton-glass p-6">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Skeleton variant="shimmer" className="h-5 w-5 rounded bg-white/25" />
+                    <Skeleton variant="shimmer" className="h-6 w-[120px] bg-white/25" />
+                  </div>
+                  <div className="space-y-3">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/10">
+                        <Skeleton variant="shimmer" className="h-8 w-8 rounded bg-white/25" />
+                        <div className="flex-1">
+                          <Skeleton variant="shimmer" className="h-4 w-[120px] bg-white/20" />
+                        </div>
+                        <Skeleton variant="shimmer" className="h-4 w-4 rounded bg-white/20" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -84,7 +216,17 @@ export function StudentDashboard() {
   }
 
   return (
-    <div className="animated-gradient-bg min-h-screen relative overflow-hidden">
+    <div
+      className="animated-gradient-bg dashboard-light-gradient min-h-screen relative overflow-hidden"
+      style={{
+        fontFamily: DS.typography.fontFamily.primary,
+        minHeight: DS.layout.structure.mainContent.minHeight,
+        backgroundColor: `hsl(var(--background))`,
+      }}
+    >
+      {/* Light Mode Background Gradient */}
+      <div className="background-gradient"></div>
+
       {/* Gradient Orbs */}
       <div className="gradient-orb"></div>
       <div className="gradient-orb"></div>
@@ -94,37 +236,137 @@ export function StudentDashboard() {
       <div className="gradient-mesh"></div>
 
       <div className="student-dashboard-container relative z-10">
-        <div className="p-6 space-y-8">
-          {/* Hero Section */}
-          <div className="student-glass rounded-3xl p-8 glow-effect subtle-wave">
+        <div style={{ padding: DS.spacing[6] }} className="space-y-8">
+          {/* Hero Section - Profile Header Card Pattern */}
+          <div
+            className="student-glass rounded-3xl glow-effect subtle-wave"
+            style={{
+              ...DS.components.cards.profile,
+              borderRadius: DS.components.cards.elevated.borderRadius,
+              padding: DS.spacing[8],
+            }}
+          >
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
               <div className="mb-6 lg:mb-0 flex-1">
                 <div className="mb-3">
-                  <h1 className="text-4xl font-bold text-white student-floating">
+                  <h1
+                    className="text-white student-floating"
+                    style={{
+                      fontSize: DS.typography.fontSizes['4xl'],
+                      fontWeight: DS.typography.fontWeights.bold,
+                      lineHeight: DS.typography.lineHeights.tight,
+                    }}
+                  >
                     Welcome Back, Student!
                   </h1>
                 </div>
-                <p className="text-white/80 text-lg leading-relaxed">
+                <p
+                  className="text-white/80"
+                  style={{
+                    fontSize: DS.typography.fontSizes.lg,
+                    lineHeight: DS.typography.lineHeights.relaxed,
+                  }}
+                >
                   Track your academic journey and stay on top of your studies
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-4">
-                <div className="bg-white/10 rounded-2xl p-4 text-center glow-effect subtle-wave">
-                  <div className="text-2xl font-bold text-white">{studentStats.enrolled_count}</div>
-                  <div className="text-white/80 text-sm">Courses</div>
+              {/* Stats Overview Section following dashboard pattern */}
+              <div
+                className="grid grid-cols-2 pt-4"
+                style={{ gap: DS.spacing[4] }}
+              >
+                <div
+                  className="bg-white/10 text-center glow-effect subtle-wave"
+                  style={{
+                    borderRadius: DS.components.cards.elevated.borderRadius,
+                    padding: DS.spacing[4],
+                  }}
+                >
+                  <div
+                    className="font-bold text-white"
+                    style={{
+                      fontSize: DS.typography.fontSizes['2xl'],
+                      fontWeight: DS.typography.fontWeights.bold,
+                    }}
+                  >
+                    {studentStats.enrolled_count}
+                  </div>
+                  <div
+                    className="text-white/80"
+                    style={{ fontSize: DS.typography.fontSizes.sm }}
+                  >
+                    Courses
+                  </div>
                 </div>
-                <div className="bg-white/10 rounded-2xl p-4 text-center glow-effect subtle-wave">
-                  <div className="text-2xl font-bold text-white">{enrollments.reduce((sum, course) => sum + course.credits, 0)}</div>
-                  <div className="text-white/80 text-sm">Credits</div>
+                <div
+                  className="bg-white/10 text-center glow-effect subtle-wave"
+                  style={{
+                    borderRadius: DS.components.cards.elevated.borderRadius,
+                    padding: DS.spacing[4],
+                  }}
+                >
+                  <div
+                    className="font-bold text-white"
+                    style={{
+                      fontSize: DS.typography.fontSizes['2xl'],
+                      fontWeight: DS.typography.fontWeights.bold,
+                    }}
+                  >
+                    {enrollments.reduce((sum, course) => sum + course.credits, 0)}
+                  </div>
+                  <div
+                    className="text-white/80"
+                    style={{ fontSize: DS.typography.fontSizes.sm }}
+                  >
+                    Credits
+                  </div>
                 </div>
-                <div className="bg-white/10 rounded-2xl p-4 text-center glow-effect subtle-wave">
-                  <div className="text-2xl font-bold text-white">{studentStats.gpa}</div>
-                  <div className="text-white/80 text-sm">GPA</div>
+                <div
+                  className="bg-white/10 text-center glow-effect subtle-wave"
+                  style={{
+                    borderRadius: DS.components.cards.elevated.borderRadius,
+                    padding: DS.spacing[4],
+                  }}
+                >
+                  <div
+                    className="font-bold text-white"
+                    style={{
+                      fontSize: DS.typography.fontSizes['2xl'],
+                      fontWeight: DS.typography.fontWeights.bold,
+                    }}
+                  >
+                    {studentStats.gpa}
+                  </div>
+                  <div
+                    className="text-white/80"
+                    style={{ fontSize: DS.typography.fontSizes.sm }}
+                  >
+                    GPA
+                  </div>
                 </div>
-                <div className="bg-white/10 rounded-2xl p-4 text-center glow-effect subtle-wave">
-                  <div className="text-2xl font-bold text-white">{enrollments.reduce((sum, course) => sum + (course.assignment_count || 0), 0)}</div>
-                  <div className="text-white/80 text-sm">Assignments</div>
+                <div
+                  className="bg-white/10 text-center glow-effect subtle-wave"
+                  style={{
+                    borderRadius: DS.components.cards.elevated.borderRadius,
+                    padding: DS.spacing[4],
+                  }}
+                >
+                  <div
+                    className="font-bold text-white"
+                    style={{
+                      fontSize: DS.typography.fontSizes['2xl'],
+                      fontWeight: DS.typography.fontWeights.bold,
+                    }}
+                  >
+                    {enrollments.reduce((sum, course) => sum + (course.assignment_count || 0), 0)}
+                  </div>
+                  <div
+                    className="text-white/80"
+                    style={{ fontSize: DS.typography.fontSizes.sm }}
+                  >
+                    Assignments
+                  </div>
                 </div>
               </div>
             </div>

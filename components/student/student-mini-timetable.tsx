@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import { getTimetableByUser } from '@/lib/timetable-actions'
 import { getStudentTimetableAttendance } from '@/lib/attendance-actions'
 import { injectUniversalBreaks, isBreakEntry, BreakEntry } from '@/lib/utils'
@@ -118,20 +119,25 @@ export function StudentMiniTimetable() {
         return courseId % courseColors.length
     }
 
+    const timeToMinutes = (time: string) => {
+        const [hours, minutes] = time.split(':').map(Number)
+        return hours * 60 + minutes
+    }
+
     const isCurrentClass = (startTime: string, endTime: string) => {
-        const start = parseInt(startTime.replace(':', ''))
-        const end = parseInt(endTime.replace(':', ''))
-        return currentTimeInMinutes >= start && currentTimeInMinutes <= end
+        const startMinutes = timeToMinutes(startTime)
+        const endMinutes = timeToMinutes(endTime)
+        return currentTimeInMinutes >= startMinutes && currentTimeInMinutes <= endMinutes
     }
 
     const isUpcoming = (startTime: string) => {
-        const start = parseInt(startTime.replace(':', ''))
-        return currentTimeInMinutes < start
+        const startMinutes = timeToMinutes(startTime)
+        return currentTimeInMinutes < startMinutes
     }
 
     const isPast = (endTime: string) => {
-        const end = parseInt(endTime.replace(':', ''))
-        return currentTimeInMinutes > end
+        const endMinutes = timeToMinutes(endTime)
+        return currentTimeInMinutes > endMinutes
     }
 
     const getAttendanceIndicator = (timetableId: number) => {
@@ -176,15 +182,45 @@ export function StudentMiniTimetable() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="flex items-center justify-center h-20">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-300"></div>
+                    <div className="space-y-3">
+                        {Array.from({ length: 3 }).map((_, i) => (
+                            <div key={i} className="bg-white/10 border border-white/20 rounded-lg p-3 space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex gap-2">
+                                        <Skeleton variant="shimmer" className="h-4 w-12 rounded-full bg-white/20" />
+                                        <Skeleton variant="shimmer" className="h-4 w-16 rounded-full bg-white/15" />
+                                    </div>
+                                    <div className="text-right space-y-1">
+                                        <Skeleton variant="shimmer" className="h-3 w-12 bg-white/20" />
+                                        <Skeleton variant="shimmer" className="h-3 w-12 bg-white/15" />
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <Skeleton variant="shimmer" className="h-4 w-20 bg-white/25" />
+                                    <Skeleton variant="shimmer" className="h-3 w-32 bg-white/20" />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1">
+                                        <Skeleton variant="shimmer" className="h-3 w-3 bg-white/20" />
+                                        <Skeleton variant="shimmer" className="h-3 w-16 bg-white/20" />
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <Skeleton variant="shimmer" className="h-3 w-3 bg-white/20" />
+                                        <Skeleton variant="shimmer" className="h-3 w-20 bg-white/20" />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </CardContent>
             </Card>
         )
     }
 
-    if (timetableData.length === 0) {
+    // Check if there are classes for today
+    const todaysClasses = timetableData.filter((entry): entry is TimetableEntry => !isBreakEntry(entry) && entry.day === today)
+
+    if (todaysClasses.length === 0) {
         return (
             <Card className="border-0 bg-transparent text-white">
                 <CardHeader className="pb-3">
@@ -213,15 +249,15 @@ export function StudentMiniTimetable() {
                         Today's Schedule
                     </CardTitle>
                     <Badge variant="secondary" className="bg-white/20 text-white border-white/30 text-xs">
-                        {today} • {timetableData.length} {timetableData.length === 1 ? 'class' : 'classes'}
+                        {today} • {todaysClasses.length} {todaysClasses.length === 1 ? 'class' : 'classes'}
                     </Badge>
                 </div>
             </CardHeader>
             <CardContent>
-                <div className={timetableData.length > 1 ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" : "space-y-3"}>
+                <div className={todaysClasses.length > 1 ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" : "space-y-3"}>
                     {timetableData
                         .sort((a, b) => a.start_time.localeCompare(b.start_time))
-                        .filter((entry): entry is TimetableEntry => !isBreakEntry(entry))
+                        .filter((entry): entry is TimetableEntry => !isBreakEntry(entry) && entry.day === today)
                         .map((entry) => {
                             const colorScheme = courseColors[getCourseColorIndex(entry.course_id)]
                             const isCurrent = isCurrentClass(entry.start_time, entry.end_time)
@@ -323,7 +359,7 @@ export function StudentMiniTimetable() {
                                             <div className="flex items-center gap-1">
                                                 <User className="w-3 h-3" />
                                                 <span className="truncate">
-                                                    {entry.faculty_name ? entry.faculty_name.split(' ').slice(-1)[0] : 'TBA'}
+                                                    {entry.faculty_name || 'TBA'}
                                                 </span>
                                             </div>
                                         </div>
@@ -345,7 +381,7 @@ export function StudentMiniTimetable() {
                                     {upcoming && (
                                         <div className="mt-3 pt-2 border-t border-white/20">
                                             <div className="text-xs text-white/70">
-                                                Starts in {Math.floor((parseInt(entry.start_time.replace(':', '')) - currentTimeInMinutes) / 60)} minute(s)
+                                                Starts in {Math.floor((timeToMinutes(entry.start_time) - currentTimeInMinutes))} minute(s)
                                             </div>
                                         </div>
                                     )}
@@ -355,13 +391,13 @@ export function StudentMiniTimetable() {
                 </div>
 
                 {/* Next class indicator if no current class */}
-                {timetableData.length > 0 && !timetableData.some(entry => !isBreakEntry(entry) && isCurrentClass(entry.start_time, entry.end_time)) && (
+                {todaysClasses.length > 0 && !todaysClasses.some(entry => isCurrentClass(entry.start_time, entry.end_time)) && (
                     <div className="mt-4 pt-3 border-t border-white/20">
                         <div className="text-center">
-                            {timetableData.some(entry => !isBreakEntry(entry) && isUpcoming(entry.start_time)) ? (
+                            {todaysClasses.some(entry => isUpcoming(entry.start_time)) ? (
                                 <div className="text-xs text-white/70">
-                                    Next class: {formatTime(timetableData
-                                        .filter((entry): entry is TimetableEntry => !isBreakEntry(entry) && isUpcoming(entry.start_time))
+                                    Next class: {formatTime(todaysClasses
+                                        .filter(entry => isUpcoming(entry.start_time))
                                         .sort((a, b) => a.start_time.localeCompare(b.start_time))[0]?.start_time)}
                                 </div>
                             ) : (

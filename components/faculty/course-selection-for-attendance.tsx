@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Calendar, Clock, Users, BookOpen, MapPin, Check, Edit } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { Skeleton } from "@/components/ui/skeleton"
 import { getTimetableByUser, checkTimetableAttendance } from "@/lib/timetable-actions"
 
 interface TimetableEntry {
@@ -174,11 +175,87 @@ export function CourseSelectionForAttendance() {
 
     if (isLoading) {
         return (
-            <div className="flex justify-center items-center h-64">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                    <p className="text-lg text-muted-foreground">Loading your courses...</p>
+            <div className="space-y-6">
+                {/* Header Skeleton */}
+                <div className="space-y-2">
+                    <Skeleton variant="shimmer" className="h-8 w-[180px]" />
+                    <Skeleton variant="shimmer" className="h-4 w-[350px]" />
                 </div>
+
+                {/* Course Selection Card Skeleton */}
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center gap-2">
+                            <Skeleton variant="shimmer" className="h-5 w-5" />
+                            <Skeleton variant="shimmer" className="h-6 w-[140px]" />
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <Skeleton variant="shimmer" className="h-4 w-[100px]" />
+                                <Skeleton variant="shimmer" className="h-10 w-full rounded" />
+                            </div>
+                            <div className="space-y-2">
+                                <Skeleton variant="shimmer" className="h-4 w-[60px]" />
+                                <Skeleton variant="shimmer" className="h-10 w-full rounded" />
+                            </div>
+                        </div>
+
+                        {/* Selected Course Details Skeleton */}
+                        <div className="border rounded-lg p-4 bg-muted/50 space-y-3">
+                            <Skeleton variant="shimmer" className="h-6 w-[250px]" />
+                            <Skeleton variant="shimmer" className="h-4 w-[180px]" />
+
+                            <div className="space-y-2">
+                                <Skeleton variant="shimmer" className="h-4 w-[150px]" />
+                                <div className="space-y-2">
+                                    {Array.from({ length: 2 }).map((_, i) => (
+                                        <div key={i} className="flex items-center justify-between p-3 bg-background rounded border">
+                                            <div className="flex items-center gap-2">
+                                                <Skeleton variant="shimmer" className="h-4 w-4" />
+                                                <Skeleton variant="shimmer" className="h-4 w-[60px]" />
+                                                <Skeleton variant="shimmer" className="h-4 w-4" />
+                                                <Skeleton variant="shimmer" className="h-4 w-[100px]" />
+                                                <Skeleton variant="shimmer" className="h-4 w-4" />
+                                                <Skeleton variant="shimmer" className="h-4 w-[80px]" />
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Skeleton variant="shimmer" className="h-6 w-[120px] rounded-full" />
+                                                <Skeleton variant="shimmer" className="h-8 w-[60px] rounded" />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Action Button Skeleton */}
+                        <div className="flex justify-end">
+                            <Skeleton variant="shimmer" className="h-10 w-[200px] rounded" />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Quick Stats Skeleton */}
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center gap-2">
+                            <Skeleton variant="shimmer" className="h-5 w-5" />
+                            <Skeleton variant="shimmer" className="h-6 w-[200px]" />
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            {Array.from({ length: 4 }).map((_, i) => (
+                                <div key={i} className="text-center p-4 border rounded-lg">
+                                    <Skeleton variant="shimmer" className="h-8 w-[40px] mx-auto mb-2" />
+                                    <Skeleton variant="shimmer" className="h-4 w-[120px] mx-auto" />
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
         )
     }

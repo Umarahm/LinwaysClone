@@ -35,7 +35,87 @@ body {
 
 @layer base {
   :root {
-    /* Dark Mode as Standard */
+    /* Light Mode Variables (Design System Compliant) */
+    --background: 220 13% 98%;
+    /* gray50 equivalent */
+    --foreground: 220 15% 11%;
+    /* gray900 equivalent */
+    --card: 0 0% 100%;
+    /* white */
+    --card-foreground: 220 15% 11%;
+    /* gray900 */
+    --popover: 0 0% 100%;
+    /* white */
+    --popover-foreground: 220 15% 11%;
+    /* gray900 */
+    --primary: 239 84% 67%;
+    /* brand #4F46E5 */
+    --primary-foreground: 0 0% 100%;
+    /* white */
+    --secondary: 220 13% 91%;
+    /* gray100 equivalent */
+    --secondary-foreground: 220 9% 46%;
+    /* gray600 */
+    --muted: 220 13% 91%;
+    /* gray100 */
+    --muted-foreground: 220 9% 46%;
+    /* gray600 */
+    --accent: 220 13% 91%;
+    /* gray100 */
+    --accent-foreground: 220 15% 11%;
+    /* gray900 */
+    --destructive: 0 84% 60%;
+    /* error */
+    --destructive-foreground: 0 0% 100%;
+    /* white */
+    --border: 220 13% 87%;
+    /* gray200 equivalent */
+    --input: 220 13% 87%;
+    /* gray200 */
+    --ring: 239 84% 67%;
+    /* brand */
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --sidebar-background: 220 15% 11%;
+    /* gray900 for contrast */
+    --sidebar-foreground: 220 13% 91%;
+    /* gray100 */
+    --sidebar-primary: 239 84% 67%;
+    /* brand */
+    --sidebar-primary-foreground: 0 0% 100%;
+    /* white */
+    --sidebar-accent: 220 9% 46%;
+    /* gray600 */
+    --sidebar-accent-foreground: 220 13% 91%;
+    /* gray100 */
+    --sidebar-border: 220 13% 87%;
+    /* gray200 */
+    --sidebar-ring: 239 84% 67%;
+    /* brand */
+    --radius: 0.5rem;
+
+    /* Faculty Dashboard Variables (Light Mode) */
+    --faculty-primary: 220 91% 65%;
+    --faculty-primary-light: 220 91% 75%;
+    --faculty-secondary: 240 84% 49%;
+    --faculty-secondary-light: 240 84% 59%;
+    --faculty-accent: 45 93% 57%;
+    --faculty-accent-light: 45 93% 67%;
+    --faculty-danger: 0 84% 70%;
+    --faculty-gradient-start: 220 91% 65%;
+    --faculty-gradient-end: 240 84% 49%;
+    --faculty-card-glow: 220 91% 65% / 0.15;
+    --faculty-shadow: 0 0% 0% / 0.1;
+    --faculty-border: 220 13% 87%;
+    --glass-bg: 0 0% 100% / 0.8;
+    --glass-border: 220 13% 87% / 0.5;
+  }
+
+  .dark {
+    /* Dark Mode Variables (Existing) */
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
     --card: 0 0% 3.9%;
@@ -55,11 +135,6 @@ body {
     --border: 0 0% 14.9%;
     --input: 0 0% 14.9%;
     --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 240 5.9% 50%;
@@ -68,19 +143,8 @@ body {
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 240 3.7% 15.9%;
-    --radius: 0.5rem;
 
-    /* Faculty Dashboard Variables (Dark Mode Optimized) */
-    --faculty-primary: 220 91% 65%;
-    --faculty-primary-light: 220 91% 75%;
-    --faculty-secondary: 240 84% 49%;
-    --faculty-secondary-light: 240 84% 59%;
-    --faculty-accent: 45 93% 57%;
-    --faculty-accent-light: 45 93% 67%;
-    --faculty-danger: 0 84% 70%;
-    --faculty-gradient-start: 220 91% 65%;
-    --faculty-gradient-end: 240 84% 49%;
-    --faculty-card-glow: 220 91% 65% / 0.15;
+    /* Faculty Dashboard Variables (Dark Mode) */
     --faculty-shadow: 0 0% 0% / 0.3;
     --faculty-border: 240 3.7% 15.9%;
     --glass-bg: 0 0% 10% / 0.8;
@@ -192,34 +256,14 @@ body {
     }
   }
 
-  /* New Gradient Animations */
-  .animated-gradient-bg {
+  /* Dark Mode Gradient Animations (Restored) */
+  .dark .animated-gradient-bg {
     background: #020024;
-    background-image: linear-gradient(90deg, rgba(2, 0, 36, 1) 0%, rgba(9, 9, 121, 1) 35%, rgba(91, 92, 94, 1) 100%);
+    background-image: linear-gradient(90deg, rgba(2, 0, 36, 1) 0%, rgba(9, 9, 121, 1) 35%, rgba(15, 15, 30, 1) 100%);
     background-size: cover;
   }
 
-  @keyframes gradientShift {
-
-    0%,
-    100% {
-      background-position: 0% 50%;
-    }
-
-    25% {
-      background-position: 100% 50%;
-    }
-
-    50% {
-      background-position: 100% 100%;
-    }
-
-    75% {
-      background-position: 0% 100%;
-    }
-  }
-
-  .gradient-orb {
+  .dark .gradient-orb {
     position: absolute;
     border-radius: 50%;
     background: linear-gradient(45deg, rgba(0, 212, 255, 0.3), rgba(10, 10, 196, 0.2));
@@ -227,7 +271,7 @@ body {
     animation: orbFloat 15s ease-in-out infinite;
   }
 
-  .gradient-orb:nth-child(1) {
+  .dark .gradient-orb:nth-child(1) {
     width: 300px;
     height: 300px;
     top: 20%;
@@ -235,7 +279,7 @@ body {
     animation-delay: 0s;
   }
 
-  .gradient-orb:nth-child(2) {
+  .dark .gradient-orb:nth-child(2) {
     width: 200px;
     height: 200px;
     top: 60%;
@@ -243,7 +287,7 @@ body {
     animation-delay: -4s;
   }
 
-  .gradient-orb:nth-child(3) {
+  .dark .gradient-orb:nth-child(3) {
     width: 250px;
     height: 250px;
     bottom: 10%;
@@ -251,7 +295,7 @@ body {
     animation-delay: -8s;
   }
 
-  @keyframes orbFloat {
+  /* @keyframes orbFloat {
 
     0%,
     100% {
@@ -273,9 +317,9 @@ body {
       transform: translate(40px, 10px) scale(1.05);
       opacity: 0.35;
     }
-  }
+  } */
 
-  .gradient-mesh {
+  /* .gradient-mesh {
     position: absolute;
     top: 0;
     left: 0;
@@ -285,7 +329,7 @@ body {
       radial-gradient(circle at 80% 70%, rgba(10, 10, 196, 0.15) 0%, transparent 50%),
       radial-gradient(circle at 60% 20%, rgba(2, 0, 36, 0.2) 0%, transparent 50%);
     animation: meshMove 18s ease-in-out infinite;
-  }
+  } */
 
   @keyframes meshMove {
 
@@ -303,11 +347,38 @@ body {
     }
   }
 
-  .glow-effect {
+  /* Light Mode - No Animations */
+  :root:not(.dark) .animated-gradient-bg {
+    background: transparent;
+    animation: none !important;
+  }
+
+  :root:not(.dark) .gradient-orb {
+    display: none;
+  }
+
+  :root:not(.dark) .gradient-mesh {
+    display: none;
+  }
+
+  /* Disable All Glow and Wave Effects in Light Mode */
+  :root:not(.dark) .glow-effect,
+  :root:not(.dark) .subtle-wave,
+  :root:not(.dark) .breathing-glow {
+    animation: none !important;
+  }
+
+  :root:not(.dark) .glow-effect::before,
+  :root:not(.dark) .subtle-wave::after {
+    display: none !important;
+  }
+
+  /* Dark Mode Glow Effects (preserved) */
+  .dark .glow-effect {
     position: relative;
   }
 
-  .glow-effect::before {
+  .dark .glow-effect::before {
     content: '';
     position: absolute;
     top: -2px;
@@ -325,7 +396,7 @@ body {
     z-index: -1;
   }
 
-  .glow-effect:hover::before {
+  .dark .glow-effect:hover::before {
     opacity: 0.6;
     animation: glowPulse 3s ease-in-out infinite;
   }
@@ -344,12 +415,12 @@ body {
     }
   }
 
-  .subtle-wave {
+  .dark .subtle-wave {
     position: relative;
     overflow: hidden;
   }
 
-  .subtle-wave::after {
+  .dark .subtle-wave::after {
     content: '';
     position: absolute;
     top: 0;
@@ -373,7 +444,7 @@ body {
     }
   }
 
-  .breathing-glow {
+  .dark .breathing-glow {
     animation: breathe 4s ease-in-out infinite;
   }
 
@@ -631,6 +702,28 @@ body {
     z-index: 1;
   }
 
+  /* Light Mode Dashboard Gradient - Modern Checkered Pattern */
+  :root:not(.dark) .dashboard-light-gradient {
+    position: relative;
+    background: white;
+    margin: -2rem -2rem;
+    padding: 2rem 2rem;
+  }
+
+  /* Light Mode Background Gradient with Screen Blend Mode */
+  :root:not(.dark) .background-gradient {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: -2rem -2rem;
+    padding: 2rem 2rem;
+    background: radial-gradient(circle at 20% 20%, #fce4ec, transparent 40%),
+      radial-gradient(circle at 80% 30%, #bbdefb, transparent 50%),
+      linear-gradient(to bottom right, #e1bee7, #81d4fa, #29b6f6);
+    background-blend-mode: screen;
+  }
+
   /* Student Glass Morphism */
   .student-glass {
     background: rgba(255, 255, 255, 0.08);
@@ -639,12 +732,184 @@ body {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   }
 
+  /* Light Mode Sidebar Hover Effects */
+  :root:not(.dark) [data-sidebar="menu-button"]:hover {
+    background-color: hsl(var(--accent)) !important;
+    color: hsl(var(--accent-foreground)) !important;
+  }
+
+  /* Light Mode Sidebar Active State */
+  :root:not(.dark) [data-sidebar="menu-button"][data-active="true"] {
+    background-color: hsl(var(--primary)) !important;
+    color: hsl(var(--primary-foreground)) !important;
+  }
+
+  /* Light Mode Glass Effect - More Visible */
+  :root:not(.dark) .dashboard-light-gradient .student-glass,
+  :root:not(.dark) .dashboard-light-gradient .faculty-glass,
+  :root:not(.dark) .dashboard-light-gradient .admin-glass {
+    background: rgba(255, 255, 255, 0.2) !important;
+    backdrop-filter: blur(25px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 0 8px 32px rgba(25, 22, 84, 0.1),
+      0 4px 16px rgba(255, 255, 255, 0.2) !important;
+    color: #1a1a1a !important;
+    position: relative !important;
+  }
+
+  /* Enhanced Glass Reflection Effect */
+  :root:not(.dark) .dashboard-light-gradient .student-glass::before,
+  :root:not(.dark) .dashboard-light-gradient .faculty-glass::before,
+  :root:not(.dark) .dashboard-light-gradient .admin-glass::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, transparent 100%);
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Text should be above the glass effect */
+  :root:not(.dark) .dashboard-light-gradient .student-glass>*,
+  :root:not(.dark) .dashboard-light-gradient .faculty-glass>*,
+  :root:not(.dark) .dashboard-light-gradient .admin-glass>* {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Light Mode Card Text Colors */
+  :root:not(.dark) .dashboard-light-gradient .student-glass *,
+  :root:not(.dark) .dashboard-light-gradient .faculty-glass *,
+  :root:not(.dark) .dashboard-light-gradient .admin-glass * {
+    color: #1a1a1a !important;
+  }
+
+  /* Light Mode Card Headers */
+  :root:not(.dark) .dashboard-light-gradient .student-glass h1,
+  :root:not(.dark) .dashboard-light-gradient .faculty-glass h1,
+  :root:not(.dark) .dashboard-light-gradient .admin-glass h1,
+  :root:not(.dark) .dashboard-light-gradient .student-glass h2,
+  :root:not(.dark) .dashboard-light-gradient .faculty-glass h2,
+  :root:not(.dark) .dashboard-light-gradient .admin-glass h2,
+  :root:not(.dark) .dashboard-light-gradient .student-glass h3,
+  :root:not(.dark) .dashboard-light-gradient .faculty-glass h3,
+  :root:not(.dark) .dashboard-light-gradient .admin-glass h3 {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+  }
+
+  /* Light Mode Stat Cards with Glass Effect */
+  :root:not(.dark) .dashboard-light-gradient .bg-white\/10,
+  :root:not(.dark) .dashboard-light-gradient .bg-white\/20 {
+    background: rgba(255, 255, 255, 0.25) !important;
+    backdrop-filter: blur(15px) !important;
+    color: #1a1a1a !important;
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    box-shadow: 0 4px 16px rgba(25, 22, 84, 0.1) !important;
+    position: relative !important;
+  }
+
+  /* Glass reflection for stat cards */
+  :root:not(.dark) .dashboard-light-gradient .bg-white\/10::before,
+  :root:not(.dark) .dashboard-light-gradient .bg-white\/20::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 40%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, transparent 100%);
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Stat card content above glass effect */
+  :root:not(.dark) .dashboard-light-gradient .bg-white\/10>*,
+  :root:not(.dark) .dashboard-light-gradient .bg-white\/20>* {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Light Mode Icons in Cards */
+  :root:not(.dark) .dashboard-light-gradient .student-glass svg,
+  :root:not(.dark) .dashboard-light-gradient .faculty-glass svg,
+  :root:not(.dark) .dashboard-light-gradient .admin-glass svg {
+    color: #2563eb !important;
+  }
+
+  /* Remove Gradient Animations */
+  :root:not(.dark) .dashboard-light-gradient .gradient-orb {
+    display: none !important;
+  }
+
+  :root:not(.dark) .dashboard-light-gradient .gradient-mesh {
+    display: none !important;
+  }
+
+  :root:not(.dark) .dashboard-light-gradient .animated-gradient-bg {
+    animation: none !important;
+  }
+
   /* Admin Glass Morphism */
   .admin-glass {
     background: rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.15);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Dark Mode Glass Effects - Proper Dark Mode Styling */
+  .dark .student-glass,
+  .dark .faculty-glass,
+  .dark .admin-glass {
+    background: rgba(255, 255, 255, 0.05) !important;
+    backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+    color: hsl(var(--foreground)) !important;
+  }
+
+  /* Dark Mode Stat Cards */
+  .dark .bg-white\/10,
+  .dark .bg-white\/20 {
+    background: rgba(255, 255, 255, 0.05) !important;
+    backdrop-filter: blur(15px) !important;
+    color: hsl(var(--foreground)) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  /* Dark Mode Card Text Colors */
+  .dark .student-glass *,
+  .dark .faculty-glass *,
+  .dark .admin-glass * {
+    color: hsl(var(--foreground)) !important;
+  }
+
+  /* Dark Mode Card Headers */
+  .dark .student-glass h1,
+  .dark .faculty-glass h1,
+  .dark .admin-glass h1,
+  .dark .student-glass h2,
+  .dark .faculty-glass h2,
+  .dark .admin-glass h2,
+  .dark .student-glass h3,
+  .dark .faculty-glass h3,
+  .dark .admin-glass h3 {
+    color: hsl(var(--foreground)) !important;
+    font-weight: 700 !important;
+  }
+
+  /* Dark Mode Icons in Cards */
+  .dark .student-glass svg,
+  .dark .faculty-glass svg,
+  .dark .admin-glass svg {
+    color: hsl(var(--primary)) !important;
   }
 
   /* Student Floating Animation */
@@ -672,6 +937,111 @@ body {
   .animated-gradient-bg {
     animation-duration: 12s;
     /* Slower animation on mobile */
+  }
+}
+
+/* Skeleton Animations - Optimized for Light and Dark Mode */
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--muted) / 0.6) 20%,
+      hsl(var(--muted) / 0.4) 50%,
+      hsl(var(--muted) / 0.6) 80%,
+      hsl(var(--muted)) 100%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 2s ease-in-out infinite;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Light Mode Skeleton Colors */
+:root:not(.dark) .skeleton-shimmer {
+  background: linear-gradient(90deg,
+      #f3f4f6 0%,
+      #e5e7eb 20%,
+      #f9fafb 50%,
+      #e5e7eb 80%,
+      #f3f4f6 100%);
+  background-size: 200% 100%;
+}
+
+/* Dark Mode Skeleton Colors */
+.dark .skeleton-shimmer {
+  background: linear-gradient(90deg,
+      #1f2937 0%,
+      #374151 20%,
+      #4b5563 50%,
+      #374151 80%,
+      #1f2937 100%);
+  background-size: 200% 100%;
+}
+
+/* Pulse animation for skeletons */
+.skeleton-pulse {
+  animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes skeleton-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Enhanced skeleton for glass morphism components */
+.skeleton-glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  animation: skeleton-glass-pulse 2s ease-in-out infinite;
+}
+
+@keyframes skeleton-glass-pulse {
+
+  0%,
+  100% {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  50% {
+    background: rgba(255, 255, 255, 0.15);
+  }
+}
+
+/* Light mode glass skeleton */
+:root:not(.dark) .skeleton-glass {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+:root:not(.dark) .skeleton-glass {
+  animation: skeleton-glass-pulse-light 2s ease-in-out infinite;
+}
+
+@keyframes skeleton-glass-pulse-light {
+
+  0%,
+  100% {
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  50% {
+    background: rgba(0, 0, 0, 0.08);
   }
 }
 

@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
 import { useToast } from "@/hooks/use-toast"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface Submission {
     id: number
@@ -233,12 +234,83 @@ export function AssignmentSubmissions() {
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-                <div className="max-w-7xl mx-auto p-6">
-                    <div className="flex justify-center items-center h-64">
-                        <div className="text-center">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                            <p className="text-lg text-muted-foreground">Loading submissions...</p>
+                <div className="max-w-7xl mx-auto p-6 space-y-6">
+                    {/* Header Skeleton */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="space-y-2">
+                            <Skeleton variant="shimmer" className="h-8 w-[230px]" />
+                            <Skeleton variant="shimmer" className="h-4 w-[280px]" />
                         </div>
+                    </div>
+
+                    {/* Stats Cards Skeleton */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        {Array.from({ length: 4 }).map((_, i) => (
+                            <div key={i} className="border-0 rounded-lg">
+                                <div className="p-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-2">
+                                            <Skeleton variant="shimmer" className="h-3 w-[60px] bg-white/40" />
+                                            <Skeleton variant="shimmer" className="h-6 w-[30px] bg-white/50" />
+                                        </div>
+                                        <Skeleton variant="shimmer" className="h-6 w-6 bg-white/40" />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Filters Skeleton */}
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1 space-y-2">
+                            <Skeleton variant="shimmer" className="h-4 w-[120px]" />
+                            <Skeleton variant="shimmer" className="h-10 w-full rounded" />
+                        </div>
+                        <div className="flex-1 space-y-2">
+                            <Skeleton variant="shimmer" className="h-4 w-[100px]" />
+                            <div className="flex space-x-1">
+                                {Array.from({ length: 4 }).map((_, i) => (
+                                    <Skeleton key={i} variant="shimmer" className="h-10 flex-1 rounded" />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Submissions Grid Skeleton */}
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        {Array.from({ length: 6 }).map((_, i) => (
+                            <div key={i} className="bg-white dark:bg-gray-800 border rounded-lg">
+                                <div className="p-4 space-y-4">
+                                    <div className="flex items-start justify-between">
+                                        <div className="space-y-2">
+                                            <Skeleton variant="shimmer" className="h-5 w-[140px]" />
+                                            <div className="flex items-center gap-2">
+                                                <Skeleton variant="shimmer" className="h-4 w-4" />
+                                                <Skeleton variant="shimmer" className="h-4 w-[100px]" />
+                                            </div>
+                                            <Skeleton variant="shimmer" className="h-4 w-[120px]" />
+                                        </div>
+                                        <Skeleton variant="shimmer" className="h-6 w-[80px] rounded-full" />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2">
+                                            <Skeleton variant="shimmer" className="h-4 w-4" />
+                                            <Skeleton variant="shimmer" className="h-4 w-[100px]" />
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Skeleton variant="shimmer" className="h-4 w-4" />
+                                            <Skeleton variant="shimmer" className="h-4 w-[80px]" />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        <Skeleton variant="shimmer" className="h-8 w-[80px] rounded" />
+                                        <Skeleton variant="shimmer" className="h-8 flex-1 rounded" />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>

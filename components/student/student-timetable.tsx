@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton, TimetableSkeleton } from "@/components/ui/skeleton"
 import { getTimetableByUser } from '@/lib/timetable-actions'
 import { getStudentTimetableAttendance } from '@/lib/attendance-actions'
 import { injectUniversalBreaks, isBreakEntry, formatBreakTime, isCurrentBreakTime, BreakEntry } from '@/lib/utils'
@@ -216,11 +217,125 @@ export function StudentTimetable() {
     if (loading) {
         return (
             <div className="p-6 space-y-6">
-                <div className="flex items-center justify-center h-64">
-                    <div className="text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                        <p className="text-lg text-muted-foreground">Loading your timetable...</p>
+                {/* Header Skeleton */}
+                <div className="flex items-center justify-between">
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                            <Skeleton variant="shimmer" className="h-8 w-8" />
+                            <Skeleton variant="shimmer" className="h-8 w-[160px]" />
+                        </div>
+                        <Skeleton variant="shimmer" className="h-4 w-[200px]" />
                     </div>
+                </div>
+
+                {/* Statistics Cards Skeleton */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                        <Card key={i} className="border-0">
+                            <CardContent className="p-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-2">
+                                        <Skeleton variant="shimmer" className="h-3 w-[100px] bg-white/40" />
+                                        <Skeleton variant="shimmer" className="h-6 w-[40px] bg-white/50" />
+                                    </div>
+                                    <Skeleton variant="shimmer" className="h-8 w-8 bg-white/40" />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+
+                {/* Desktop Timetable Skeleton */}
+                <div className="hidden lg:block">
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center gap-2">
+                                <Skeleton variant="shimmer" className="h-5 w-5" />
+                                <Skeleton variant="shimmer" className="h-6 w-[180px]" />
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="overflow-auto">
+                                <div className="min-w-[1000px]">
+                                    {/* Header Row Skeleton */}
+                                    <div className="grid grid-cols-7 gap-2 mb-4">
+                                        <Skeleton variant="shimmer" className="h-12 rounded-lg" />
+                                        {Array.from({ length: 6 }).map((_, i) => (
+                                            <Skeleton key={i} variant="shimmer" className="h-12 rounded-lg" />
+                                        ))}
+                                    </div>
+
+                                    {/* Time Slots Skeleton */}
+                                    {Array.from({ length: 8 }).map((_, rowIndex) => (
+                                        <div key={rowIndex} className="grid grid-cols-7 gap-2 mb-2">
+                                            <Skeleton variant="shimmer" className="h-16 rounded-lg" />
+                                            {Array.from({ length: 6 }).map((_, colIndex) => (
+                                                <div key={colIndex} className="space-y-1">
+                                                    {Math.random() > 0.3 ? (
+                                                        <div className="border rounded-lg p-3 space-y-2 bg-muted/50">
+                                                            <div className="flex items-center justify-between">
+                                                                <Skeleton variant="shimmer" className="h-4 w-[60px]" />
+                                                                <Skeleton variant="shimmer" className="h-3 w-[40px] rounded-full" />
+                                                            </div>
+                                                            <Skeleton variant="shimmer" className="h-3 w-[80px]" />
+                                                            <div className="flex items-center gap-1">
+                                                                <Skeleton variant="shimmer" className="h-3 w-3" />
+                                                                <Skeleton variant="shimmer" className="h-3 w-[50px]" />
+                                                            </div>
+                                                            <div className="flex items-center gap-1">
+                                                                <Skeleton variant="shimmer" className="h-3 w-3" />
+                                                                <Skeleton variant="shimmer" className="h-3 w-[60px]" />
+                                                            </div>
+                                                            <Skeleton variant="shimmer" className="h-3 w-[70px]" />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="h-16"></div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Mobile View Skeleton */}
+                <div className="lg:hidden space-y-4">
+                    {Array.from({ length: 7 }).map((_, dayIndex) => (
+                        <Card key={dayIndex}>
+                            <CardHeader className="pb-3">
+                                <div className="flex items-center justify-between">
+                                    <Skeleton variant="shimmer" className="h-6 w-[100px]" />
+                                    <Skeleton variant="shimmer" className="h-5 w-[60px] rounded-full" />
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-3">
+                                    {Array.from({ length: Math.floor(Math.random() * 4) + 1 }).map((_, classIndex) => (
+                                        <div key={classIndex} className="border rounded-lg p-3 space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <Skeleton variant="shimmer" className="h-4 w-[80px]" />
+                                                <Skeleton variant="shimmer" className="h-3 w-[60px]" />
+                                            </div>
+                                            <Skeleton variant="shimmer" className="h-3 w-[120px]" />
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-1">
+                                                    <Skeleton variant="shimmer" className="h-3 w-3" />
+                                                    <Skeleton variant="shimmer" className="h-3 w-[50px]" />
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    <Skeleton variant="shimmer" className="h-3 w-3" />
+                                                    <Skeleton variant="shimmer" className="h-3 w-[60px]" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
                 </div>
             </div>
         )

@@ -52,9 +52,11 @@ import { useToast } from "@/hooks/use-toast"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { ThemeToggleButton } from "@/components/ui/theme-toggle-button"
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -512,87 +514,21 @@ export function DashboardClient({ user: initialUser }: DashboardClientProps) {
               </div>
             </SidebarHeader>
 
-            <SidebarContent className={`px-4 py-6 ${user.role === 'faculty' ? 'sidebar-faculty-scroll' : 'sidebar-default-scroll'}`} style={{
-              background: user.role === 'faculty'
-                ? 'linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.05) 100%)'
-                : 'transparent'
-            }}>
+            <SidebarContent className="px-2">
               <SidebarGroup>
-                <div className={`
-                  px-4 py-3 mb-6 rounded-2xl border backdrop-blur-sm
-                  ${user.role === 'faculty'
-                    ? 'bg-white/10 border-white/20 text-white'
-                    : 'bg-muted/50 border-border text-foreground'
-                  }
-                `}>
-                  <div className="flex items-center gap-3">
-                    <div className={`
-                      w-8 h-8 rounded-xl flex items-center justify-center
-                      ${user.role === 'faculty'
-                        ? 'bg-white/20 text-white'
-                        : 'bg-primary/10 text-primary'
-                      }
-                    `}>
-                      <GraduationCap className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className={`font-semibold text-sm ${user.role === 'faculty' ? 'text-white' : 'text-foreground'}`}>
-                        Navigation
-                      </div>
-                      <div className={`text-xs ${user.role === 'faculty' ? 'text-white/70' : 'text-muted-foreground'}`}>
-                        Quick access menu
-                      </div>
-                    </div>
-                  </div>
-                </div>
                 <SidebarGroupContent>
-                  <SidebarMenu className="space-y-1">
-                    {navigationItems.map((item, index) => (
+                  <SidebarMenu>
+                    {navigationItems.map((item) => (
                       <SidebarMenuItem key={item.key}>
                         <SidebarMenuButton
                           onClick={() => {
-                            // Clear URL parameters and update current page
                             window.history.pushState({}, '', '/dashboard')
                             setCurrentPage(item.key)
                           }}
                           isActive={currentPage === item.key}
-                          className={`
-                            group relative rounded-2xl px-4 py-3 mb-1 transition-all duration-300 sidebar-item-hover border
-                            ${user.role === 'faculty' ? 'sidebar-faculty-item' : ''}
-                            ${currentPage === item.key
-                              ? user.role === 'faculty'
-                                ? 'bg-white/25 text-white shadow-lg backdrop-blur-sm border-white/30'
-                                : 'bg-primary text-primary-foreground border-primary/20'
-                              : user.role === 'faculty'
-                                ? 'text-white/80 hover:bg-white/10 hover:text-white border-white/10 hover:border-white/20'
-                                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground border-transparent hover:border-border'
-                            }
-                          `}
-                          style={{
-                            animationDelay: `${index * 0.05}s`,
-                            transform: currentPage === item.key ? 'translateX(2px)' : 'none'
-                          }}
                         >
-                          <div className={`
-                            w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-300
-                            ${currentPage === item.key
-                              ? user.role === 'faculty'
-                                ? 'bg-white/20 text-white'
-                                : 'bg-primary-foreground/20 text-primary-foreground'
-                              : user.role === 'faculty'
-                                ? 'bg-white/10 text-white/80 group-hover:bg-white/15 group-hover:text-white'
-                                : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'
-                            }
-                          `}>
-                            <item.icon className="h-4 w-4 transition-transform group-hover:scale-110 sidebar-icon-hover" />
-                          </div>
-                          <span className="font-medium">{item.title}</span>
-                          {currentPage === item.key && (
-                            <div className={`
-                              absolute right-3 w-2 h-2 rounded-full
-                              ${user.role === 'faculty' ? 'bg-white/80 faculty-pulse' : 'bg-primary faculty-pulse'}
-                            `}></div>
-                          )}
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     ))}
@@ -601,47 +537,28 @@ export function DashboardClient({ user: initialUser }: DashboardClientProps) {
               </SidebarGroup>
             </SidebarContent>
 
-            {/* Enhanced user profile at bottom */}
-            <div className="mt-auto p-6 border-t border-white/20">
-              <div className={`
-                rounded-2xl p-4 transition-all duration-300 sidebar-profile-hover
-                ${user.role === 'faculty'
-                  ? 'bg-white/10 backdrop-blur-sm'
-                  : 'bg-muted/50'
-                }
-              `}>
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-12 w-12 border-2 border-white/30">
-                    {user.avatar ? <AvatarImage src={user.avatar} /> : null}
-                    <AvatarFallback
-                      className="text-sm text-white flex items-center justify-center font-semibold"
-                      style={{
-                        backgroundColor: user.role === 'faculty'
-                          ? 'rgba(255,255,255,0.2)'
-                          : getAvatarColor(user.fullName)
-                      }}
-                    >
-                      {user.fullName
-                        .split(" ")
-                        .slice(0, 2)
-                        .map((n) => n[0])
-                        .join("")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col">
-                    <span className={`font-semibold leading-none line-clamp-1 ${user.role === 'faculty' ? 'text-white' : 'text-foreground'
-                      }`}>
-                      {user.fullName}
-                    </span>
-                    <span className={`text-xs line-clamp-1 mt-1 ${user.role === 'faculty' ? 'text-white/80' : 'text-muted-foreground'
-                      }`}>
-                      {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                      {user.department && ` • ${user.department}`}
-                    </span>
-                  </div>
+            <SidebarFooter>
+              <div className="flex items-center gap-3 p-2">
+                <Avatar className="h-8 w-8">
+                  {user.avatar ? <AvatarImage src={user.avatar} /> : null}
+                  <AvatarFallback style={{ backgroundColor: getAvatarColor(user.fullName) }}>
+                    {user.fullName
+                      .split(" ")
+                      .slice(0, 2)
+                      .map((n) => n[0])
+                      .join("")}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col">
+                  <span className="font-medium text-sm text-sidebar-foreground">
+                    {user.fullName}
+                  </span>
+                  <span className="text-xs text-sidebar-foreground/70">
+                    {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                  </span>
                 </div>
               </div>
-            </div>
+            </SidebarFooter>
           </Sidebar>
 
           <SidebarInset className="flex-1">
@@ -678,6 +595,11 @@ export function DashboardClient({ user: initialUser }: DashboardClientProps) {
               </div>
 
               <div className="flex items-center gap-3">
+                <ThemeToggleButton
+                  variant="secondary"
+                  size="md"
+                  className="transition-all duration-300 hover:scale-110 sidebar-icon-hover"
+                />
 
                 <NotificationPopover
                   notifications={notifications}

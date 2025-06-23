@@ -20,6 +20,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
+import { Skeleton } from "@/components/ui/skeleton"
 import { AssignmentSubmissions } from "@/components/faculty/assignment-submissions"
 
 interface Assignment {
@@ -303,8 +304,93 @@ export function AssignmentManagement() {
 
     if (fetchLoading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <div className="text-lg text-foreground">Loading assignments...</div>
+            <div className="space-y-6 bg-background text-foreground p-6">
+                {/* Header Skeleton */}
+                <div className="flex items-center justify-between">
+                    <div className="space-y-2">
+                        <Skeleton variant="shimmer" className="h-8 w-[220px]" />
+                        <Skeleton variant="shimmer" className="h-4 w-[350px]" />
+                    </div>
+                </div>
+
+                {/* Tabs Skeleton */}
+                <div className="space-y-4">
+                    <div className="flex space-x-2">
+                        {Array.from({ length: 2 }).map((_, i) => (
+                            <Skeleton key={i} variant="shimmer" className="h-10 w-[160px] rounded" />
+                        ))}
+                    </div>
+
+                    {/* Assignment Management Content Skeleton */}
+                    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+                        <div className="max-w-7xl mx-auto p-6 space-y-6">
+                            {/* Header */}
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                <div className="space-y-2">
+                                    <Skeleton variant="shimmer" className="h-8 w-[220px]" />
+                                    <Skeleton variant="shimmer" className="h-4 w-[280px]" />
+                                </div>
+                                <Skeleton variant="shimmer" className="h-10 w-[150px] rounded" />
+                            </div>
+
+                            {/* Stats Cards Skeleton */}
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                {Array.from({ length: 4 }).map((_, i) => (
+                                    <div key={i} className="bg-card border rounded-lg p-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="space-y-2">
+                                                <Skeleton variant="shimmer" className="h-3 w-[80px]" />
+                                                <Skeleton variant="shimmer" className="h-6 w-[40px]" />
+                                            </div>
+                                            <Skeleton variant="shimmer" className="h-6 w-6" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Assignment Cards Skeleton */}
+                            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                                {Array.from({ length: 6 }).map((_, i) => (
+                                    <div key={i} className="bg-white dark:bg-gray-800 border rounded-lg">
+                                        <div className="p-4 space-y-4">
+                                            <div className="flex items-start justify-between">
+                                                <div className="space-y-2">
+                                                    <Skeleton variant="shimmer" className="h-5 w-[160px]" />
+                                                    <div className="flex items-center gap-2">
+                                                        <Skeleton variant="shimmer" className="h-4 w-4" />
+                                                        <Skeleton variant="shimmer" className="h-4 w-[100px]" />
+                                                    </div>
+                                                </div>
+                                                <Skeleton variant="shimmer" className="h-6 w-[70px] rounded-full" />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Skeleton variant="shimmer" className="h-4 w-full" />
+                                                <Skeleton variant="shimmer" className="h-4 w-[80%]" />
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="flex items-center gap-2">
+                                                    <Skeleton variant="shimmer" className="h-4 w-4" />
+                                                    <Skeleton variant="shimmer" className="h-4 w-[80px]" />
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Skeleton variant="shimmer" className="h-4 w-4" />
+                                                    <Skeleton variant="shimmer" className="h-4 w-[60px]" />
+                                                </div>
+                                            </div>
+
+                                            <div className="flex gap-2">
+                                                <Skeleton variant="shimmer" className="h-8 w-[80px] rounded" />
+                                                <Skeleton variant="shimmer" className="h-8 w-[80px] rounded" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         )
     }

@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Skeleton, AssignmentCardSkeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks/use-toast"
 
 interface Assignment {
@@ -282,11 +283,86 @@ export function AssignmentsSubmission() {
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-                <div className="max-w-7xl mx-auto p-6">
-                    <div className="flex justify-center items-center h-64">
-                        <div className="text-center">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                            <p className="text-lg text-muted-foreground">Loading assignments...</p>
+                <div className="max-w-7xl mx-auto p-6 space-y-6">
+                    {/* Header Skeleton */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="space-y-2">
+                            <Skeleton variant="shimmer" className="h-8 w-[200px]" />
+                            <Skeleton variant="shimmer" className="h-4 w-[280px]" />
+                        </div>
+                    </div>
+
+                    {/* Stats Cards Skeleton */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        {Array.from({ length: 4 }).map((_, i) => (
+                            <Card key={i} className="border-0">
+                                <CardContent className="p-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-2">
+                                            <Skeleton variant="shimmer" className="h-3 w-[60px] bg-white/40" />
+                                            <Skeleton variant="shimmer" className="h-6 w-[30px] bg-white/50" />
+                                        </div>
+                                        <Skeleton variant="shimmer" className="h-6 w-6 bg-white/40" />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+
+                    {/* Filter Tabs Skeleton */}
+                    <div className="space-y-6">
+                        <div className="flex space-x-2">
+                            {Array.from({ length: 3 }).map((_, i) => (
+                                <Skeleton key={i} variant="shimmer" className="h-10 w-[120px] rounded" />
+                            ))}
+                        </div>
+
+                        {/* Assignment Cards Skeleton */}
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+                            {Array.from({ length: 6 }).map((_, i) => (
+                                <Card key={i} className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                                    <CardHeader className="pb-3">
+                                        <div className="flex items-start justify-between">
+                                            <div className="space-y-2">
+                                                <Skeleton variant="shimmer" className="h-5 w-[160px]" />
+                                                <div className="flex items-center gap-2">
+                                                    <Skeleton variant="shimmer" className="h-4 w-4" />
+                                                    <Skeleton variant="shimmer" className="h-4 w-[100px]" />
+                                                </div>
+                                            </div>
+                                            <Skeleton variant="shimmer" className="h-6 w-[80px] rounded-full" />
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Skeleton variant="shimmer" className="h-4 w-full" />
+                                            <Skeleton variant="shimmer" className="h-4 w-[80%]" />
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4 text-sm">
+                                            <div className="flex items-center gap-2">
+                                                <Skeleton variant="shimmer" className="h-4 w-4" />
+                                                <Skeleton variant="shimmer" className="h-4 w-[80px]" />
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Skeleton variant="shimmer" className="h-4 w-4" />
+                                                <Skeleton variant="shimmer" className="h-4 w-[60px]" />
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-2">
+                                            {Math.random() > 0.5 ? (
+                                                <Skeleton variant="shimmer" className="h-9 w-[100px] rounded" />
+                                            ) : (
+                                                <>
+                                                    <Skeleton variant="shimmer" className="h-9 flex-1 rounded" />
+                                                    <Skeleton variant="shimmer" className="h-9 w-[100px] rounded" />
+                                                </>
+                                            )}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
                         </div>
                     </div>
                 </div>
